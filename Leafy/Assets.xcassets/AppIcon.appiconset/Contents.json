@@ -1,6 +1,7 @@
 {
   "images" : [
     {
+      "filename" : "1080.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -12,6 +13,7 @@
           "value" : "dark"
         }
       ],
+      "filename" : "Gemini_Generated_Image_36js8e36js8e36js-photoaidcom-greyscale.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"
@@ -23,6 +25,7 @@
           "value" : "tinted"
         }
       ],
+      "filename" : "Gemini_Generated_Image_d8v9nud8v9nud8v9.png",
       "idiom" : "universal",
       "platform" : "ios",
       "size" : "1024x1024"

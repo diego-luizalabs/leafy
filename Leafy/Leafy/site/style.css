@@ -1,0 +1,552 @@
+/* Importação da Fonte do Google */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+
+/* Variáveis de Cor (baseadas no seu código Swift) */
+:root {
+    --cor-primaria: #4ca640; /* rgb(76, 166, 64) - corFolhaClara */
+    --cor-destaque: #f2b24c; /* rgb(242, 178, 76) - corDestaque */
+    --cor-terra: #33260d;    /* rgb(51, 38, 13) - corTerra (aprox) */
+    --cor-texto: #555;
+    --fundo-claro: #f8f9fa;
+    --fundo-branco: #ffffff;
+    --sombra-card: 0 4px 15px rgba(0, 0, 0, 0.07);
+}
+
+/* Reset Básico e Estilo Geral */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: 'Nunito', sans-serif;
+    color: var(--cor-texto);
+    line-height: 1.7;
+    background-color: var(--fundo-branco);
+}
+
+.container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+h1, h2, h3 {
+    font-weight: 900;
+    color: var(--cor-terra);
+    margin-bottom: 1rem;
+    line-height: 1.2;
+}
+
+h1 { font-size: 3rem; }
+h2 { font-size: 2.5rem; text-align: center; }
+h3 { font-size: 1.5rem; }
+
+section {
+    padding: 6rem 0;
+}
+
+section:nth-child(even) {
+    background-color: var(--fundo-claro);
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* 1. Cabeçalho (Navbar) */
+#navbar {
+    background: var(--fundo-branco);
+    padding: 1rem 0;
+    position: sticky;
+    top: 0;
+    width: 100%;
+    z-index: 100;
+    transition: box-shadow 0.3s ease, background 0.3s ease;
+}
+
+#navbar.scrolled {
+    box-shadow: var(--sombra-card);
+}
+
+#navbar .container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#navbar .logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+}
+
+/* NOVO ESTILO PARA O LOGO */
+#navbar .logo-img {
+    height: 36px; /* Ajuste a altura conforme necessário */
+    width: auto;
+    margin-right: 10px;
+}
+
+#navbar .logo span {
+    font-size: 1.75rem;
+    font-weight: 900;
+    color: var(--cor-primaria);
+}
+
+
+#navbar nav ul {
+    list-style: none;
+    display: flex;
+    align-items: center;
+}
+
+#navbar nav li {
+    margin-left: 1.5rem;
+}
+
+#navbar nav a {
+    text-decoration: none;
+    color: var(--cor-texto);
+    font-weight: 700;
+    transition: color 0.3s ease;
+}
+
+#navbar nav a:hover {
+    color: var(--cor-primaria);
+}
+
+/* Botões Globais */
+.btn {
+    padding: 10px 22px;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 700;
+    transition: all 0.3s ease;
+    display: inline-block;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: var(--cor-primaria);
+    color: white;
+}
+.btn-primary:hover {
+    background: #3a8a30;
+    transform: translateY(-2px);
+}
+
+.btn-secondary {
+    background: var(--fundo-claro);
+    color: var(--cor-terra);
+    border: 2px solid #eee;
+}
+.btn-secondary:hover {
+    background: #eee;
+    border-color: #ddd;
+}
+
+/* Botão de Download da App Store */
+.btn-appstore {
+    background-color: #000;
+    color: white;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    transition: transform 0.3s ease;
+}
+.btn-appstore:hover {
+    transform: scale(1.05);
+}
+.btn-appstore .apple-icon {
+    width: 24px;
+    height: 24px;
+    fill: white;
+    margin-right: 12px;
+}
+.btn-appstore div {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+    line-height: 1.1;
+}
+.btn-appstore span {
+    font-size: 0.8rem;
+    opacity: 0.8;
+}
+.btn-appstore strong {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+
+/* 2. Seção Hero */
+#hero {
+    padding-top: 4rem;
+    padding-bottom: 4rem;
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+}
+
+#hero .container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 3rem;
+}
+
+#hero .hero-text {
+    flex: 1;
+}
+
+#hero .hero-text p {
+    font-size: 1.25rem;
+    margin: 1.5rem 0 2rem;
+}
+
+#hero .hero-image {
+    flex: 0 0 40%;
+    text-align: center;
+}
+#hero .hero-image img {
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+}
+
+
+/* 3. Seção "Para Quem?" */
+#publico .publico-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.card {
+    background: var(--fundo-branco);
+    border-radius: 12px;
+    padding: 2.5rem;
+    box-shadow: var(--sombra-card);
+}
+
+.card h3 {
+    color: var(--cor-primaria);
+}
+
+.card ul {
+    list-style: none;
+    margin-top: 1rem;
+}
+
+.card ul li {
+    position: relative;
+    padding-left: 25px;
+    margin-bottom: 0.5rem;
+}
+.card ul li::before {
+    content: '✓';
+    color: var(--cor-primaria);
+    position: absolute;
+    left: 0;
+    top: 0;
+    font-weight: 700;
+}
+
+/* 4. Seção de Recursos */
+#recursos .recursos-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+}
+
+.feature-card {
+    background: var(--fundo-branco);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: var(--sombra-card);
+    transition: transform 0.3s ease;
+}
+.feature-card:hover {
+    transform: translateY(-5px);
+}
+.feature-card .icon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+/* 5. Seção da Missão */
+#missao {
+    background: var(--cor-terra);
+    color: white;
+    text-align: center;
+}
+#missao h2, #missao p {
+    color: white;
+}
+#missao p {
+    font-size: 1.5rem;
+    font-weight: 400;
+    max-width: 800px;
+    margin: 0 auto;
+}
+#missao .valores {
+    margin-top: 2rem;
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+}
+#missao .valores span {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: 700;
+}
+
+/* 6. Seção de Planos */
+#planos .planos-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2rem;
+    margin-top: 3rem;
+    align-items: stretch;
+}
+
+.plano-card {
+    background: var(--fundo-branco);
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: var(--sombra-card);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    border: 3px solid transparent;
+}
+
+.plano-card.recomendado {
+    border-color: var(--cor-primaria);
+    transform: scale(1.05);
+}
+
+.plano-card .tag-recomendado {
+    position: absolute;
+    top: -15px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--cor-primaria);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 5px 15px;
+    border-radius: 20px;
+    text-transform: uppercase;
+}
+
+.plano-card h3 {
+    color: var(--cor-primaria);
+}
+.plano-card .preco {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--cor-terra);
+    margin-bottom: 1rem;
+}
+.plano-card .preco small {
+    font-size: 1rem;
+    font-weight: 400;
+    color: var(--cor-texto);
+}
+.plano-card ul {
+    list-style: none;
+    margin: 1.5rem 0;
+    flex-grow: 1; /* Empurra o botão para baixo */
+}
+.plano-card ul li {
+    margin-bottom: 0.75rem;
+    position: relative;
+    padding-left: 25px;
+}
+.plano-card ul li::before {
+    content: '✓';
+    color: var(--cor-primaria);
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+.plano-card .btn {
+    width: 100%;
+    text-align: center;
+}
+
+/* 7. Seção Final de Download */
+#download {
+    background: var(--cor-primaria);
+    text-align: center;
+    color: white;
+}
+#download h2, #download p {
+    color: white;
+}
+#download p {
+    font-size: 1.2rem;
+    max-width: 600px;
+    margin: 0 auto 2rem;
+}
+
+/* 8. Rodapé */
+footer {
+    background: #f1f1f1;
+    text-align: center;
+    padding: 2rem 0;
+    font-size: 0.9rem;
+    color: #888;
+}
+
+/* NOVO ESTILO PARA O LINK/BOTÃO "ESCONDIDO" */
+.footer-link {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    text-decoration: underline;
+    font-size: 0.9rem;
+    margin-top: 10px;
+    display: inline-block;
+    font-family: 'Nunito', sans-serif;
+}
+.footer-link:hover {
+    color: var(--cor-primaria);
+}
+
+
+/* --- Responsividade (para Celulares) --- */
+@media (max-width: 768px) {
+    h1 { font-size: 2.2rem; }
+    h2 { font-size: 1.8rem; }
+    section { padding: 3rem 0; }
+
+    /* Esconde a navegação desktop */
+    #navbar nav {
+        display: none; 
+        /* Para um site real, aqui entraria um menu "hambúrguer" com JS */
+    }
+    #navbar .btn {
+        display: none;
+    }
+
+    #hero .container {
+        flex-direction: column;
+        text-align: center;
+    }
+    #hero .hero-image {
+        margin-top: 2rem;
+    }
+
+    #publico .publico-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #planos .planos-grid {
+        grid-template-columns: 1fr;
+    }
+    .plano-card.recomendado {
+        transform: scale(1); /* Remove o zoom no mobile */
+    }
+}
+
+
+/* ========================================= */
+/* --- 9. NOVOS ESTILOS DO MODAL (Apresentações) --- */
+/* ========================================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+/* Classe 'show' que será adicionada via JS */
+.modal-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-content {
+    background: var(--fundo-branco);
+    padding: 2.5rem;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 800px; /* Mais largo para a grade */
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.modal-overlay.show .modal-content {
+    transform: scale(1);
+}
+
+.modal-content h2 {
+    text-align: left;
+    margin-bottom: 1rem;
+    color: var(--cor-terra);
+}
+
+.modal-close {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 2rem;
+    color: #aaa;
+    background: none;
+    border: none;
+    cursor: pointer;
+    line-height: 1;
+}
+.modal-close:hover {
+    color: var(--cor-terra);
+}
+
+/* Estilo da grade da equipe dentro do modal */
+.equipe-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+.membro {
+    background: var(--fundo-claro);
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+.membro h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--cor-primaria);
+    margin-bottom: 0.5rem;
+}
+.membro p {
+    font-size: 0.9rem;
+    color: var(--cor-texto);
+}

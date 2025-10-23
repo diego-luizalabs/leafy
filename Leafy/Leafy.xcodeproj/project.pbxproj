@@ -7,18 +7,24 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		51B77FF09593F87C84BB6F47 /* Pods_Leafy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0FA3081A21C4A2696AA000F9 /* Pods_Leafy.framework */; };
 		9EFB3BE52EAA4EA600682170 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 9EFB3BE42EAA4EA600682170 /* FirebaseCore */; };
 		9EFB3BE72EAA4EB300682170 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 9EFB3BE62EAA4EB300682170 /* FirebaseAuth */; };
 		9EFB3BE92EAA4EB800682170 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 9EFB3BE82EAA4EB800682170 /* FirebaseFirestore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		0FA3081A21C4A2696AA000F9 /* Pods_Leafy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Leafy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E7472F12EA659B8002A7FBD /* Leafy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Leafy.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C52C36CD07C3D8BE3E356C14 /* Pods-Leafy.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Leafy.release.xcconfig"; path = "Target Support Files/Pods-Leafy/Pods-Leafy.release.xcconfig"; sourceTree = "<group>"; };
+		F63F3B1FD856391F6A79A12C /* Pods-Leafy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Leafy.debug.xcconfig"; path = "Target Support Files/Pods-Leafy/Pods-Leafy.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		9E7472F32EA659B8002A7FBD /* Leafy */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = Leafy;
 			sourceTree = "<group>";
 		};
@@ -32,18 +38,30 @@
 				9EFB3BE52EAA4EA600682170 /* FirebaseCore in Frameworks */,
 				9EFB3BE72EAA4EB300682170 /* FirebaseAuth in Frameworks */,
 				9EFB3BE92EAA4EB800682170 /* FirebaseFirestore in Frameworks */,
+				51B77FF09593F87C84BB6F47 /* Pods_Leafy.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		9B93CE0E07F9949ACDB47C17 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				F63F3B1FD856391F6A79A12C /* Pods-Leafy.debug.xcconfig */,
+				C52C36CD07C3D8BE3E356C14 /* Pods-Leafy.release.xcconfig */,
+			);
+			name = Pods;
+			path = Pods;
+			sourceTree = "<group>";
+		};
 		9E7472E82EA659B8002A7FBD = {
 			isa = PBXGroup;
 			children = (
 				9E7472F32EA659B8002A7FBD /* Leafy */,
 				9EFB3BE32EAA4EA600682170 /* Frameworks */,
 				9E7472F22EA659B8002A7FBD /* Products */,
+				9B93CE0E07F9949ACDB47C17 /* Pods */,
 			);
 			sourceTree = "<group>";
 		};
@@ -58,6 +76,7 @@
 		9EFB3BE32EAA4EA600682170 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				0FA3081A21C4A2696AA000F9 /* Pods_Leafy.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -69,9 +88,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 9E7472FC2EA659BA002A7FBD /* Build configuration list for PBXNativeTarget "Leafy" */;
 			buildPhases = (
+				4BE625321BC438B5A2264054 /* [CP] Check Pods Manifest.lock */,
 				9E7472ED2EA659B8002A7FBD /* Sources */,
 				9E7472EE2EA659B8002A7FBD /* Frameworks */,
 				9E7472EF2EA659B8002A7FBD /* Resources */,
+				295EF2C6AD349B5EB72297A0 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -136,6 +157,48 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		295EF2C6AD349B5EB72297A0 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Leafy/Pods-Leafy-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Leafy/Pods-Leafy-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Leafy/Pods-Leafy-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		4BE625321BC438B5A2264054 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Leafy-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		9E7472ED2EA659B8002A7FBD /* Sources */ = {
@@ -269,6 +332,7 @@
 		};
 		9E7472FD2EA659BA002A7FBD /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = F63F3B1FD856391F6A79A12C /* Pods-Leafy.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -302,6 +366,7 @@
 		};
 		9E7472FE2EA659BA002A7FBD /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C52C36CD07C3D8BE3E356C14 /* Pods-Leafy.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

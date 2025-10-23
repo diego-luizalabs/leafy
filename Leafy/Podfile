@@ -1,0 +1,9 @@
+source 'https://cdn.cocoapods.org/' 
+platform :ios, '15.0' 
+
+target 'Leafy' do
+  use_frameworks!
+  pod 'Firebase/Auth'
+  pod 'Firebase/Firestore'
+  pod 'Firebase/Storage'
+end

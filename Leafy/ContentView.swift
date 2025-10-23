@@ -2,8 +2,8 @@ import SwiftUI
 import Combine
 import Foundation
 import SafariServices
+import FirebaseAuth
 
-// MARK: - 1. Theme Colors
 extension Color {
     static let corFolhaClara = Color(red: 0.3, green: 0.65, blue: 0.25)
     static let corDestaque = Color(red: 0.95, green: 0.7, blue: 0.3)
@@ -11,15 +11,14 @@ extension Color {
     static let fundoFormularioEscuro = Color(.systemGray5)
 }
 
-// MARK: - 2. Data Models
 struct ConteudoEducacional: Identifiable, Hashable {
     let id = UUID()
     let titulo: String, subtitulo: String, descricaoCurta: String, icone: String
     let cor: Color, categoria: String, nivel: String
     var isMandatoryFor: [UserRole]? = nil
     var link: String? = nil
-    var autor: String? = nil // Para artigos
-    var duracao: String? = nil // Para vídeos
+    var autor: String? = nil
+    var duracao: String? = nil
 }
 
 struct Plano: Identifiable {
@@ -54,8 +53,6 @@ struct Particle: Identifiable {
     }
 }
 
-
-// MARK: - 3. App Data Store (Centralized State Management)
 enum UserRole: String, CaseIterable {
     case estudante = "Estudante"
     case educador = "Educador"
@@ -104,7 +101,6 @@ class AppDataStore: ObservableObject {
     }
 }
 
-// MARK: - 4. State Enums & Theming
 enum AuthScreen { case welcome, login, cadastro }
 
 struct AppTheme {
@@ -115,7 +111,6 @@ struct AppTheme {
     var fundoCampoInput: Color { colorScheme == .light ? Color(.systemGray5) : Color(.systemGray4) }
 }
 
-// MARK: - 5. Shared View Components & Modifiers
 struct TagModifier: ViewModifier {
     let color: Color
     func body(content: Content) -> some View {
@@ -127,7 +122,6 @@ extension View {
     func tagStyle(color: Color) -> some View { self.modifier(TagModifier(color: color)) }
 }
 
-// MARK: - 6. Role-Specific Main Views
 struct EscolasView: View {
     let logoutAction: () -> Void
     @State private var showProfile = false
@@ -240,7 +234,6 @@ struct EstudanteMainView: View {
     }
 }
 
-// MARK: - 7. Content Views (Main App)
 struct PlanosView: View {
     @Environment(\.colorScheme) var colorScheme
     let planos: [Plano] = [
@@ -411,7 +404,6 @@ struct CursoCardView: View {
         }.buttonStyle(.plain)
     }
 }
-
 
 struct ItemRowView: View {
     let item: ConteudoEducacional
@@ -631,7 +623,9 @@ struct PrivacyPolicyView: View {
 }
 
 
-// MARK: - 8. Authentication & Onboarding Views
+// ==========================================
+// ===== SPLASHSCREEN VIEW - ATUALIZADA =====
+// ==========================================
 struct SplashScreenView: View {
     @State private var dropPosition: CGFloat = -UIScreen.main.bounds.midY
     @State private var dropScale: CGFloat = 1.0
@@ -639,30 +633,46 @@ struct SplashScreenView: View {
     @State private var rippleOpacity: Double = 1.0
     @State private var backgroundScale: CGFloat = 0.0
     
+    // ===== MUDANÇA AQUI (1/3): Novas variáveis para a animação da folha =====
+    @State private var exitLeafScale: CGFloat = 0.01
+    @State private var exitLeafOpacity: Double = 0.0
+
     var body: some View {
         ZStack {
             Color.white.edgesIgnoringSafeArea(.all)
             
+            // O círculo verde que expande
             Circle()
                 .fill(Color.corFolhaClara)
                 .frame(width: 100, height: 100)
                 .scaleEffect(backgroundScale)
             
+            // O efeito de "ripple"
             ZStack {
                 Circle().stroke(Color.corFolhaClara, lineWidth: 2).scaleEffect(rippleScale).opacity(rippleOpacity)
                 Circle().stroke(Color.corFolhaClara, lineWidth: 1).scaleEffect(rippleScale * 1.5).opacity(rippleOpacity * 0.7)
             }
 
+            // A gota que cai
             Circle()
                 .fill(Color.corFolhaClara)
                 .frame(width: 30, height: 30)
                 .scaleEffect(dropScale)
                 .offset(y: dropPosition)
+            
+            // ===== MUDANÇA AQUI (2/3): A nova folha que aparece no final =====
+            // Ela começa invisível
+            Image(systemName: "leaf.fill")
+                .font(.system(size: 100))
+                .foregroundColor(.white) // Cor branca para aparecer sobre o fundo verde
+                .scaleEffect(exitLeafScale)
+                .opacity(exitLeafOpacity)
         }
         .onAppear(perform: startAnimationSequence)
     }
     
     private func startAnimationSequence() {
+        // --- Animação de ENTRADA (Como estava antes) ---
         withAnimation(.easeIn(duration: 0.6)) {
             dropPosition = 0
         }
@@ -677,13 +687,33 @@ struct SplashScreenView: View {
             }
         }
         
+        // Tela fica verde (termina em 1.6s)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
             withAnimation(.easeIn(duration: 0.8)) {
                 backgroundScale = 50
             }
         }
+        
+        // ===== MUDANÇA AQUI (3/3): Nova animação de SAÍDA =====
+        // Vamos começar aos 2.0s (antes dos 3.0s do ContentView)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            
+            // O fundo verde encolhe e a folha branca aparece
+            withAnimation(.easeInOut(duration: 0.8)) {
+                backgroundScale = 0.0   // Fundo verde some
+                exitLeafScale = 1.0     // Folha branca cresce
+                exitLeafOpacity = 1.0   // Folha branca aparece
+            }
+            
+            // E então, a folha branca desaparece
+            withAnimation(.easeOut(duration: 0.2).delay(0.8)) { // Começa depois que a animação acima termina
+                exitLeafOpacity = 0.0
+            }
+        }
+        // (O timer de 3.0s do ContentView vai esconder esta tela logo após a folha sumir)
     }
 }
+
 
 struct WelcomeView: View {
     @EnvironmentObject var appDataStore: AppDataStore
@@ -861,25 +891,37 @@ struct LoginView: View {
     @State private var email = ""
     @State private var senha = ""
     @State private var showAlert = false
+    @State private var alertMessage = ""
     @State private var viewOpacity = 0.0
     
     private func attemptLogin() {
-        var success = false
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let trimmedPassword = senha.trimmingCharacters(in: .whitespacesAndNewlines)
 
-        if trimmedEmail == "educador@leafy.com" && trimmedPassword == "123456" {
-            appDataStore.userRole = .educador
-            success = true
-        } else if trimmedEmail == "estudante@leafy.com" && trimmedPassword == "123456" {
-            appDataStore.userRole = .estudante
-            success = true
+        guard !trimmedEmail.isEmpty, !trimmedPassword.isEmpty else {
+            self.alertMessage = "Por favor, preencha o e-mail e a senha."
+            self.showAlert = true
+            return
         }
-        
-        if success {
-            if UserDefaults.standard.bool(forKey: "hasAcceptedMainTerms") { showMandatoryModules = true }
-            else { showTerms = true }
-        } else { showAlert = true }
+
+        Auth.auth().signIn(withEmail: trimmedEmail, password: trimmedPassword) { authResult, error in
+            
+            if let error = error {
+                self.alertMessage = "Credenciais inválidas. Verifique seu e-mail e senha."
+                self.showAlert = true
+                print("ERRO DE LOGIN: \(error.localizedDescription)")
+            } else {
+                print("Usuário logado com sucesso: \(authResult?.user.uid ?? "")")
+                
+                appDataStore.userRole = .estudante
+
+                if UserDefaults.standard.bool(forKey: "hasAcceptedMainTerms") {
+                    showMandatoryModules = true
+                } else {
+                    showTerms = true
+                }
+            }
+        }
     }
     
     var body: some View {
@@ -907,7 +949,10 @@ struct LoginView: View {
             Button(action: { withAnimation { currentAuthScreen = .welcome } }) {
                 Image(systemName: "arrow.left.circle.fill").font(.title).foregroundColor(.gray.opacity(0.5))
             }.padding()
-        }.alert(isPresented: $showAlert) { Alert(title: Text("Erro de Login"), message: Text("Credenciais inválidas."), dismissButton: .default(Text("OK"))) }
+        }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Aviso de Login"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
         .opacity(viewOpacity).onAppear { withAnimation(.easeIn(duration: 0.5)) { viewOpacity = 1.0 } }
     }
 }
@@ -947,6 +992,10 @@ struct TermsAndConditionsView: View {
     }
 }
 
+
+// ===============================================
+// ===== CADASTRO VIEW - ATUALIZADA (LÓGICA) =====
+// ===============================================
 struct CadastroView: View {
     @EnvironmentObject var appDataStore: AppDataStore
     @Binding var currentAuthScreen: AuthScreen
@@ -957,6 +1006,54 @@ struct CadastroView: View {
     @State private var email = ""
     @State private var senha = ""
     @State private var viewOpacity = 0.0
+    
+    @State private var showAlert = false
+    @State private var alertMessage = ""
+    
+    // ===== MUDANÇA AQUI (1/1): Lógica de cadastro atualizada =====
+    private func attemptCadastro() {
+        let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let trimmedPassword = senha.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !trimmedEmail.isEmpty, !trimmedPassword.isEmpty, !nome.isEmpty else {
+            self.alertMessage = "Por favor, preencha todos os campos."
+            self.showAlert = true
+            return
+        }
+        
+        guard trimmedPassword.count >= 6 else {
+            self.alertMessage = "A senha deve ter no mínimo 6 caracteres."
+            self.showAlert = true
+            return
+        }
+
+        Auth.auth().createUser(withEmail: trimmedEmail, password: trimmedPassword) { authResult, error in
+            if let error = error {
+                // Erro (ex: e-mail já existe)
+                self.alertMessage = "Não foi possível criar a conta: \(error.localizedDescription)"
+                self.showAlert = true
+            } else {
+                // SUCESSO!
+                print("Usuário criado com sucesso: \(authResult?.user.uid ?? "")")
+                
+                // 1. Deslogar o usuário (para forçar o login)
+                do {
+                    try Auth.auth().signOut()
+                } catch {
+                    print("Erro ao deslogar após cadastro: \(error.localizedDescription)")
+                }
+                
+                // 2. Avisar que deu certo e pedir para logar
+                self.alertMessage = "Conta criada com sucesso! Por favor, faça o login."
+                self.showAlert = true
+                
+                // 3. Mudar a tela de volta para o Login
+                withAnimation {
+                    self.currentAuthScreen = .login
+                }
+            }
+        }
+    }
     
     var body: some View {
         let theme = AppTheme(colorScheme: colorScheme)
@@ -969,10 +1066,8 @@ struct CadastroView: View {
                         TextField("Nome Completo", text: $nome).padding().background(theme.fundoCampoInput).cornerRadius(12)
                         TextField("E-mail", text: $email).padding().background(theme.fundoCampoInput).cornerRadius(12).autocapitalization(.none)
                         SecureField("Senha", text: $senha).padding().background(theme.fundoCampoInput).cornerRadius(12)
-                        Button(action: {
-                            if UserDefaults.standard.bool(forKey: "hasAcceptedMainTerms") { showMandatoryModules = true }
-                            else { showTerms = true }
-                        }) {
+                        
+                        Button(action: attemptCadastro) { // Ação do botão está correta
                             Text("Cadastrar").font(.body.weight(.bold)).frame(maxWidth: .infinity).padding().background(Color.corFolhaClara).foregroundColor(.white).cornerRadius(12).shadow(color: .corFolhaClara.opacity(0.5), radius: 10, x: 0, y: 5)
                         }.padding(.top, 10)
                     }
@@ -989,9 +1084,14 @@ struct CadastroView: View {
             Button(action: { withAnimation { currentAuthScreen = .welcome } }) {
                 Image(systemName: "arrow.left.circle.fill").font(.title).foregroundColor(.gray.opacity(0.5))
             }.padding()
-        }.opacity(viewOpacity).onAppear { withAnimation(.easeIn(duration: 0.5)) { viewOpacity = 1.0 } }
+        }
+        .alert(isPresented: $showAlert) {
+            Alert(title: Text("Aviso de Cadastro"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+        }
+        .opacity(viewOpacity).onAppear { withAnimation(.easeIn(duration: 0.5)) { viewOpacity = 1.0 } }
     }
 }
+
 
 struct ContentView: View {
     @StateObject private var appDataStore = AppDataStore()
@@ -1011,7 +1111,7 @@ struct ContentView: View {
                 }
             } else {
                 Group {
-                    if showSplash { SplashScreenView() }
+                    if showSplash { SplashScreenView() } // Timer de 3s está aqui
                     else if currentAuthScreen == .welcome { WelcomeView(currentAuthScreen: $currentAuthScreen).environmentObject(appDataStore) }
                     else if currentAuthScreen == .login { LoginView(currentAuthScreen: $currentAuthScreen, showTerms: $showTerms, showMandatoryModules: $showMandatoryModules).environmentObject(appDataStore) }
                     else { CadastroView(currentAuthScreen: $currentAuthScreen, showTerms: $showTerms, showMandatoryModules: $showMandatoryModules).environmentObject(appDataStore) }
@@ -1022,6 +1122,7 @@ struct ContentView: View {
             }
         }
         .onAppear {
+            // Este timer de 3.0s controla o splash
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                 withAnimation(.easeOut) { showSplash = false }
             }
@@ -1029,15 +1130,18 @@ struct ContentView: View {
     }
 
     private func logout() {
-        withAnimation {
-            isAuthenticated = false
-            currentAuthScreen = .login
+        do {
+            try Auth.auth().signOut()
+            withAnimation {
+                isAuthenticated = false
+                currentAuthScreen = .login
+            }
+        } catch let signOutError as NSError {
+            print("Erro ao fazer logout: %@", signOutError)
         }
     }
 }
 
-
-// MARK: - Componentes para a Aba Explorar
 struct SearchBar: View {
     @Binding var text: String
     var body: some View {
@@ -1138,7 +1242,6 @@ struct FeedbackCard: View {
     }
 }
 
-// **CORREÇÃO:** Sintaxe do PreviewProvider para compatibilidade com iOS 15
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()

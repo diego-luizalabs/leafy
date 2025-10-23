@@ -183,8 +183,8 @@ struct ComunidadeChatView: View {
                         }
                     }.padding()
                 }
-                .onChange(of: appDataStore.chatMessages) { //
-                    if let lastMessage = appDataStore.chatMessages.last {
+                .onChange(of: appDataStore.chatMessages) { value in // Compatível com iOS 15
+                    if let lastMessage = value.last {
                         withAnimation { scrollViewProxy.scrollTo(lastMessage.id, anchor: .bottom) }
                     }
                 }

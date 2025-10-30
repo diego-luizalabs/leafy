@@ -23,7 +23,7 @@ struct ConteudoEducacional: Identifiable, Hashable {
     let id = UUID()
     let titulo: String, subtitulo: String, descricaoCurta: String, icone: String
     let cor: Color, categoria: String, nivel: String
-    var isMandatoryFor: [UserRole]? = nil
+    var isMandatory: Bool = false
     var link: String? = nil
     var autor: String? = nil
     var duracao: String? = nil
@@ -61,7 +61,6 @@ struct Particle: Identifiable {
         )
     }
 
-    // Construtor para partículas que sobem (usado no Minigame)
     static func createRandomMovingUp(in size: CGSize) -> Particle {
         let color = [Color.corFolhaClara.opacity(0.6), Color.corDestaque.opacity(0.5), .white.opacity(0.7)].randomElement()!
         return Particle(
@@ -74,15 +73,9 @@ struct Particle: Identifiable {
     }
 }
 
-enum UserRole: String, CaseIterable, Codable {
-    case estudante = "Estudante"
-    case educador = "Educador"
-}
-
 struct UserProfile: Codable, Identifiable {
     var id: String?
     var name: String
-    var role: UserRole
     var profileImageURL: String?
     var bio: String?
     var points: Int
@@ -95,7 +88,6 @@ class AppDataStore: ObservableObject {
     @Published var conteudosCompletos: Set<UUID> = []
 
     @Published var userProfile: UserProfile? = nil
-    @Published var userRole: UserRole? = nil
     @Published var userName: String = "Visitante"
     var userBio: String { userProfile?.bio ?? "" }
 
@@ -111,11 +103,8 @@ class AppDataStore: ObservableObject {
 
     init() {
         self.conteudos = [
-            // Módulos Obrigatórios
-            ConteudoEducacional(titulo: "Missões e Valores", subtitulo: "Módulo Obrigatório", descricaoCurta: "Conheça os pilares da plataforma Leafy.", icone: "heart.fill", cor: .pink, categoria: "Institucional", nivel: "Todos", isMandatoryFor: [.estudante, .educador]),
-            ConteudoEducacional(titulo: "Compreender o Mercado Sustentável", subtitulo: "Módulo Obrigatório", descricaoCurta: "Sustentabilidade e o futuro profissional.", icone: "briefcase.fill", cor: .indigo, categoria: "Carreira", nivel: "Iniciante", isMandatoryFor: [.estudante]),
-
-            // Minigame
+            ConteudoEducacional(titulo: "Missões e Valores", subtitulo: "Módulo Obrigatório", descricaoCurta: "Conheça os pilares da plataforma Leafy.", icone: "heart.fill", cor: .pink, categoria: "Institucional", nivel: "Todos", isMandatory: true),
+            ConteudoEducacional(titulo: "Compreender o Mercado Sustentável", subtitulo: "Módulo Obrigatório", descricaoCurta: "Sustentabilidade e o futuro profissional.", icone: "briefcase.fill", cor: .indigo, categoria: "Carreira", nivel: "Iniciante", isMandatory: true),
             ConteudoEducacional(
                 titulo: "Minigame da Coleta",
                 subtitulo: "Jogue e Ganhe Pontos!",
@@ -125,8 +114,6 @@ class AppDataStore: ObservableObject {
                 categoria: "Minigame",
                 nivel: "Todos"
             ),
-
-            // Cursos
             ConteudoEducacional(titulo: "Hortas Urbanas e Permacultura", subtitulo: "Curso Prático", descricaoCurta: "Guia completo de plantio em pequenos espaços.", icone: "leaf.fill", cor: .corFolhaClara, categoria: "Curso", nivel: "Iniciante"),
             ConteudoEducacional(titulo: "Reciclagem e Economia Circular", subtitulo: "Curso Completo", descricaoCurta: "Técnicas e a economia circular.", icone: "arrow.triangle.2.circlepath", cor: .blue, categoria: "Curso", nivel: "Avançado"),
             ConteudoEducacional(titulo: "Energias Renováveis do Futuro", subtitulo: "Curso Técnico", descricaoCurta: "Explore a energia solar, eólica e outras fontes limpas.", icone: "wind", cor: .cyan, categoria: "Curso", nivel: "Avançado"),
@@ -135,12 +122,10 @@ class AppDataStore: ObservableObject {
             ConteudoEducacional(titulo: "A Ameaça dos Oceanos", subtitulo: "Ecossistemas Marinhos", descricaoCurta: "Como o lixo plástico impacta a vida marinha.", icone: "trash.circle.fill", cor: .teal, categoria: "Curso", nivel: "Avançado"),
             ConteudoEducacional(titulo: "A Revolução da Energia Solar", subtitulo: "Energias Renováveis", descricaoCurta: "Como a energia solar está moldando o futuro.", icone: "sun.max.trianglebadge.exclamationmark.fill", cor: .orange, categoria: "Curso", nivel: "Iniciante"),
             ConteudoEducacional(titulo: "O Problema do Isopor", subtitulo: "Descarte Correto", descricaoCurta: "Aprenda a descartar e reciclar o isopor corretamente.", icone: "archivebox.fill", cor: .gray, categoria: "Curso", nivel: "Iniciante"),
-
-            // Ebooks, Artigos, Videos... (continuam iguais)
             ConteudoEducacional(titulo: "Guia de Compostagem Caseira", subtitulo: "E-book Gratuito", descricaoCurta: "Transforme resíduos orgânicos em adubo.", icone: "book.closed.fill", cor: Color(red: 0.2, green: 0.15, blue: 0.05), categoria: "Ebook", nivel: "Iniciante", link: "https://www.infoteca.cnptia.embrapa.br/infoteca/bitstream/doc/1019253/1/cartilhacompostagem.pdf"),
             ConteudoEducacional(titulo: "Manual Completo do Lixo Zero", subtitulo: "E-book Completo", descricaoCurta: "Princípios para reduzir sua geração de lixo.", icone: "trash.slash.fill", cor: .gray, categoria: "Ebook", nivel: "Avançado"),
-            ConteudoEducacional(titulo: "5 Atitudes para um Planeta Mais Saudável", subtitulo: "Artigo da Comunidade", descricaoCurta: "Pequenas mudanças que fazem a diferença.", icone: "newspaper.fill", cor: .purple, categoria: "Artigo", nivel: "Todos", autor: "Equipe Leafy", textoCompleto: "..."),
-            ConteudoEducacional(titulo: "A Importância Vital das Abelhas", subtitulo: "Artigo Científico", descricaoCurta: "O papel vital dos polinizadores.", icone: "ant.fill", cor: .red, categoria: "Artigo", nivel: "Intermediário", autor: "Dr. Silva", textoCompleto: "..."),
+            ConteudoEducacional(titulo: "5 Atitudes para um Planeta Mais Saudável", subtitulo: "Artigo da Comunidade", descricaoCurta: "Pequenas mudanças que fazem a diferença.", icone: "newspaper.fill", cor: .purple, categoria: "Artigo", nivel: "Todos", autor: "Equipe Leafy", textoCompleto: "Pequenas mudanças de hábito podem ter um impacto global..."),
+            ConteudoEducacional(titulo: "A Importância Vital das Abelhas", subtitulo: "Artigo Científico", descricaoCurta: "O papel vital dos polinizadores.", icone: "ant.fill", cor: .red, categoria: "Artigo", nivel: "Intermediário", autor: "Dr. Silva", textoCompleto: "As abelhas são responsáveis por mais de 70% da polinização..."),
             ConteudoEducacional(titulo: "Como Montar sua Horta Vertical", subtitulo: "Vídeo Tutorial", descricaoCurta: "Horta em apartamentos.", icone: "video.fill", cor: .teal, categoria: "Video", nivel: "Iniciante", duracao: "12 min"),
             ConteudoEducacional(titulo: "Documentário: Oceanos de Plástico", subtitulo: "Documentário Impactante", descricaoCurta: "A poluição marinha.", icone: "film.fill", cor: .blue, categoria: "Video", nivel: "Todos", duracao: "45 min")
         ]
@@ -148,8 +133,6 @@ class AppDataStore: ObservableObject {
         setupAuthListener()
         listenToChatMessages()
     }
-
-    // ... (setupAuthListener, listenToUserProfile, listenToChatMessages, sendMessage, createUserProfile, addPoints, updateUserName, updateUserBio, sendPasswordReset, updateProfileImage, stopListening, toggleCompletion, deinit - permanecem iguais às versões anteriores)
 
     private func setupAuthListener() {
         if let handle = authStateHandle {
@@ -165,7 +148,6 @@ class AppDataStore: ObservableObject {
                 self.stopListening()
                 DispatchQueue.main.async {
                     self.userProfile = nil
-                    self.userRole = nil
                     self.userName = "Visitante"
                     self.userProfileImage = nil
                     self.chatMessages = []
@@ -187,7 +169,6 @@ class AppDataStore: ObservableObject {
                     DispatchQueue.main.async {
                         self.userProfile = nil
                         self.userName = "Erro ao Carregar"
-                        self.userRole = nil
                     }
                     return
                 }
@@ -197,7 +178,6 @@ class AppDataStore: ObservableObject {
                     DispatchQueue.main.async {
                         self.userProfile = nil
                         self.userName = "Perfil Não Encontrado"
-                        self.userRole = nil
                     }
                     return
                 }
@@ -205,19 +185,16 @@ class AppDataStore: ObservableObject {
                 print("✅ Documento do perfil encontrado para \(userID).")
                 let data = document.data()
                 let name = data?["name"] as? String ?? "Nome Padrão"
-                let roleString = data?["role"] as? String ?? UserRole.estudante.rawValue
                 let profileImageURL = data?["profileImageURL"] as? String
                 let bio = data?["bio"] as? String ?? ""
-                let role = UserRole(rawValue: roleString) ?? .estudante
                 let points = data?["points"] as? Int ?? 0
 
-                let profile = UserProfile(id: document.documentID, name: name, role: role, profileImageURL: profileImageURL, bio: bio, points: points)
+                let profile = UserProfile(id: document.documentID, name: name, profileImageURL: profileImageURL, bio: bio, points: points)
 
                 DispatchQueue.main.async {
                     self.userProfile = profile
                     self.userName = profile.name
-                    self.userRole = profile.role
-                    print("✅✅ Perfil CARREGADO/ATUALIZADO: \(profile.name), Role: \(profile.role.rawValue), Pontos: \(profile.points)")
+                    print("✅✅ Perfil CARREGADO/ATUALIZADO: \(profile.name), Pontos: \(profile.points)")
 
                     if profile.profileImageURL == nil {
                         self.userProfileImage = nil
@@ -277,10 +254,9 @@ class AppDataStore: ObservableObject {
         }
     }
 
-    func createUserProfile(userID: String, name: String, role: UserRole) {
+    func createUserProfile(userID: String, name: String) {
         let profileData: [String: Any] = [
             "name": name,
-            "role": role.rawValue,
             "profileImageURL": NSNull(),
             "bio": "",
             "points": 0
@@ -421,7 +397,7 @@ class AppDataStore: ObservableObject {
 }
 
 // MARK: - Views Utilitárias e de Tema
-enum AuthScreen { case welcome, login, cadastro }
+enum AuthScreen { case login, cadastro }
 struct AppTheme {
     var colorScheme: ColorScheme
     var fundo: Color { colorScheme == .light ? Color(.systemGray6) : Color(red: 0.1, green: 0.1, blue: 0.1) }
@@ -437,19 +413,6 @@ struct TagModifier: ViewModifier {
 }
 extension View {
     func tagStyle(color: Color) -> some View { self.modifier(TagModifier(color: color)) }
-}
-struct EscolasView: View {
-    let logoutAction: () -> Void
-    @State private var showProfile = false
-    var body: some View { NavigationView { Text("Área de Gestão de Escolas").font(.largeTitle).navigationTitle("Escolas")
-        .toolbar { ToolbarItem(placement: .navigationBarTrailing) {
-            Button(action: { showProfile = true }) { Image(systemName: "person.circle.fill") }
-        } }
-        .sheet(isPresented: $showProfile) { ProfileView(logoutAction: logoutAction) }
-    } }
-}
-struct ChatsProducaoView: View {
-    var body: some View { NavigationView { Text("Chats de Produção e Suporte").navigationTitle("Produção") } }
 }
 
 // MARK: - Views de Chat
@@ -527,17 +490,7 @@ struct ComunidadeChatView: View {
 }
 
 // MARK: - Views Principais (Tabs)
-struct EducadorMainView: View {
-    let logoutAction: () -> Void
-    var body: some View {
-        TabView {
-            NavigationView { EscolasView(logoutAction: logoutAction) }.tabItem { Label("Escolas", systemImage: "building.2.fill") }
-            NavigationView { ChatsProducaoView() }.tabItem { Label("Produção", systemImage: "bubble.left.and.bubble.right.fill") }
-            NavigationView { CursosView(logoutAction: logoutAction) }.tabItem { Label("Cursos", systemImage: "books.vertical.fill") }
-        }.accentColor(.corFolhaClara)
-    }
-}
-struct EstudanteMainView: View {
+struct MainView: View {
     let logoutAction: () -> Void
     var body: some View {
         TabView {
@@ -610,7 +563,7 @@ struct ModuleView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     Text("Aula 1: Introdução").font(.title2.weight(.bold))
                     RoundedRectangle(cornerRadius: 15).fill(Color.gray.opacity(0.2)).aspectRatio(16/9, contentMode: .fit).overlay(Image(systemName: "play.circle.fill").font(.largeTitle).foregroundColor(.gray))
-                    Text("Este módulo introdutório explora os conceitos fundamentais de \(item.titulo.lowercased()). Abordaremos os principais desafios e as soluções mais eficazes que você pode aplicar no seu dia a dia para promover um impacto positivo e duradouro no meio ambiente. O conteúdo foi desenhado para ser prático e de fácil compreensão.").lineSpacing(5)
+                    Text("Este módulo introdutório explora os conceitos fundamentais de \(item.titulo.lowercased()). Abordaremos os principais desafios e as soluções mais eficazes que você pode aplicar no seu dia a dia para promover um impacto positivo e duradouro no meio ambiente. O conteúdo foi desenhado para ser prático e de fácil comprehension.").lineSpacing(5)
                     Divider()
                     Button(action: {
                         appDataStore.toggleCompletion(for: item)
@@ -1020,7 +973,7 @@ struct CursosView: View {
     @State private var showProfile = false
 
     private var todosOsCursos: [ConteudoEducacional] {
-        appDataStore.conteudos.filter { $0.categoria == "Curso" && !($0.isMandatoryFor != nil) }
+        appDataStore.conteudos.filter { $0.categoria == "Curso" && !$0.isMandatory }
     }
 
     private var minigameItem: ConteudoEducacional? {
@@ -1032,7 +985,6 @@ struct CursosView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
 
-                // Card GRANDE do Minigame com Pontos
                 if let minigame = minigameItem {
                     NavigationLink(destination: MinigameView()) {
                         ZStack(alignment: .topTrailing) {
@@ -1055,7 +1007,6 @@ struct CursosView: View {
                     .padding(.horizontal)
                 }
 
-                // Seção "Trilhas de Aprendizagem" (Cursos Normais)
                 if !todosOsCursos.isEmpty {
                     Text("Trilhas de Aprendizagem")
                         .font(.title2.weight(.bold))
@@ -1157,7 +1108,7 @@ struct ExplorarView: View {
     }
 }
 
-// ****** [MinigameView COM JOGO E ANIMAÇÕES] ******
+// MARK: - Minigame
 enum WasteCategory: String, CaseIterable {
     case reciclavel = "Reciclável"
     case organico = "Orgânico"
@@ -1314,7 +1265,7 @@ struct MinigameView: View {
                                     .transition(.opacity.combined(with: .scale(scale: 0.8)))
                                     .id("feedback_\(itemsSorted)")
                             } else {
-                                Text(" ").font(.headline).padding(5) // Placeholder
+                                Text(" ").font(.headline).padding(5)
                             }
                         }
                         .transition(.scale.combined(with: .opacity))
@@ -1384,63 +1335,53 @@ struct MinigameView: View {
         feedbackMessage = nil
         sortingDisabled = false
         showNextItem()
-        // Reinicia animação do ícone
         withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
             iconScale = 1.10
         }
     }
 
     func showNextItem() {
-        // Escolhe um item aleatório da lista
         currentItem = itemsToChooseFrom.randomElement()
     }
 
     func sortItem(selectedCategory: WasteCategory) {
         guard let currentItem = currentItem else { return }
 
-        sortingDisabled = true // Desabilita botões
+        sortingDisabled = true
         itemsSorted += 1
 
         if selectedCategory == currentItem.category {
-            // Correto
-            sessionScore += 10 // Ganha 10 pontos
+            sessionScore += 10
             feedbackMessage = "Correto! +10"
             feedbackColor = .green
         } else {
-            // Incorreto
             feedbackMessage = "Ops! Era \(currentItem.category.rawValue)"
             feedbackColor = .red
         }
 
-        // Mostra feedback por 1.2 segundos
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-            self.feedbackMessage = nil // Limpa feedback
+            self.feedbackMessage = nil
 
-            // Verifica se o jogo acabou
             if itemsSorted >= maxItemsToSort {
                 endGame()
             } else {
-                // Prepara próximo item
-                withAnimation { // Adiciona animação na troca
+                withAnimation {
                     showNextItem()
                 }
-                sortingDisabled = false // Reabilita botões
+                sortingDisabled = false
             }
         }
     }
 
     func endGame() {
         gamePhase = .gameOver
-        appDataStore.addPoints(sessionScore) // Adiciona pontos da sessão ao total
-        sortingDisabled = false // Garante que estejam habilitados para "Jogar Novamente"
-        // Para animação de pulso
+        appDataStore.addPoints(sessionScore)
+        sortingDisabled = false
         withAnimation(.easeInOut(duration: 0.2)) {
             iconScale = 1.0
         }
     }
 
-
-    // --- Funções de Animação de Fundo ---
     func startBackgroundAnimations(size: CGSize) {
         createInitialParticles(size: size)
         timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { _ in
@@ -1470,8 +1411,6 @@ struct MinigameView: View {
         }
     }
 }
-// ****** [FIM] MinigameView ATUALIZADA ******
-
 
 // MARK: - Views de Perfil e Configurações
 struct ProfileView: View {
@@ -1492,7 +1431,6 @@ struct ProfileView: View {
 
         NavigationView {
             Form {
-                // Seção de Foto, Nome e Bio
                 Section {
                     HStack(alignment: .top, spacing: 20) {
                         PhotosPicker(selection: $selectedPhotoItem, matching: .images, photoLibrary: .shared()) {
@@ -1539,8 +1477,7 @@ struct ProfileView: View {
                                 Spacer()
                                 Button { saveChanges() } label: { Text(isEditing ? "Salvar" : "Editar") }.buttonStyle(.bordered)
                             }
-                            Text(appDataStore.userRole?.rawValue ?? "Usuário").font(.subheadline).foregroundColor(.secondary)
-
+                            
                             if isEditing {
                                 VStack(alignment: .leading) {
                                     Text("Sobre mim:")
@@ -1564,11 +1501,8 @@ struct ProfileView: View {
                     .padding(.vertical)
                 }
 
-                // Seção Conta
                 Section(header: Text("Conta")) {
-                    if appDataStore.userRole == .estudante {
-                        NavigationLink(destination: PlanosView()) { Label("Ver Planos", systemImage: "creditcard.fill") }
-                    }
+                    NavigationLink(destination: PlanosView()) { Label("Ver Planos", systemImage: "creditcard.fill") }
                     Toggle(isOn: .constant(true)) { Label("Receber Notificações", systemImage: "bell.badge.fill") }
 
                     HStack {
@@ -1580,7 +1514,6 @@ struct ProfileView: View {
                      }
                 }
 
-                // Seção Sobre
                 Section(header: Text("Sobre")) {
                     Button { showPrivacy = true } label: { Label("Política de Privacidade", systemImage: "lock.shield.fill") }
                     HStack {
@@ -1590,7 +1523,6 @@ struct ProfileView: View {
                      }
                 }
 
-                // Seção Sair
                 Section {
                     Button(role: .destructive) {
                         dismiss()
@@ -1722,147 +1654,7 @@ struct SplashScreenView: View {
         }
     }
 }
-struct WelcomeView: View {
-    @EnvironmentObject var appDataStore: AppDataStore
-    @Binding var currentAuthScreen: AuthScreen
-    @Environment(\.colorScheme) var colorScheme
 
-    @State private var leafRotation: Angle = .degrees(-180)
-    @State private var leafOffset: CGFloat = -200
-    @State private var leafOpacity: Double = 0.0
-    @State private var textOpacity: Double = 0.0
-    @State private var buttonOffset: CGFloat = 200
-
-    @State private var defaultRole: UserRole = .estudante
-
-    private func selectRole(_ role: UserRole) {
-        appDataStore.userRole = role
-        defaultRole = role
-        withAnimation { currentAuthScreen = .login }
-    }
-
-    var body: some View {
-        let theme = AppTheme(colorScheme: colorScheme)
-
-        VStack(spacing: 20) {
-            Spacer()
-            Image(systemName: "leaf.fill")
-                .font(.system(size: 100))
-                .foregroundColor(.corFolhaClara)
-                .rotationEffect(leafRotation)
-                .offset(y: leafOffset)
-                .opacity(leafOpacity)
-                .shadow(color: .corFolhaClara.opacity(0.4), radius: 10, y: 5)
-
-            VStack(spacing: 10) {
-                Text("LEAFY")
-                    .font(.system(size: 60, weight: .black, design: .rounded))
-                    .foregroundColor(theme.corTerra)
-                Text("Sua jornada para um futuro mais verde começa aqui.")
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-            }
-            .opacity(textOpacity)
-            .padding(.horizontal)
-
-            Spacer(); Spacer()
-
-            VStack(spacing: 20) {
-                Button(action: { selectRole(.estudante) }) {
-                    Label("Sou Estudante", systemImage: "person.fill")
-                        .font(.headline.weight(.bold))
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.corFolhaClara)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                }
-                .shadow(color: .corFolhaClara.opacity(0.5), radius: 8, x: 0, y: 4)
-                .offset(y: buttonOffset)
-
-                Button(action: { selectRole(.educador) }) {
-                    Label("Sou Educador", systemImage: "graduationcap.fill")
-                        .font(.headline.weight(.bold))
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.corDestaque)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                }
-                .shadow(color: .corDestaque.opacity(0.5), radius: 8, x: 0, y: 4)
-                .offset(y: buttonOffset)
-            }
-        }
-        .padding(40)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(theme.fundo.ignoresSafeArea())
-        .onAppear(perform: startAnimation)
-    }
-
-    private func startAnimation() {
-        withAnimation(.spring(response: 1.0, dampingFraction: 0.7).delay(0.2)) { leafRotation = .degrees(0); leafOffset = 0; leafOpacity = 1.0 }
-        withAnimation(.easeIn(duration: 0.8).delay(0.8)) { textOpacity = 1.0 }
-        withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(1.2)) { buttonOffset = 0 }
-    }
-}
-struct MissionAndValuesView: View {
-    @EnvironmentObject var appDataStore: AppDataStore
-    @Environment(\.dismiss) var dismiss
-    let item: ConteudoEducacional
-
-    var body: some View {
-        NavigationView {
-            VStack(spacing: 0) {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 15) {
-                        Text("Nossa Missão")
-                            .font(.title2.weight(.bold))
-                        Text("Acreditamos que a educação ambiental é a semente fundamental para cultivar um futuro mais verde e sustentável. Nossa missão é capacitar indivíduos e comunidades com o conhecimento e as ferramentas necessárias para tomar decisões conscientes e agir em prol do meio ambiente, promovendo um impacto positivo duradouro.")
-                            .lineSpacing(5)
-
-                        Divider().padding(.vertical, 10)
-
-                        Text("Nossos Valores")
-                            .font(.title2.weight(.bold))
-                        Text("**Ação Local, Impacto Global:** Incentivamos ações práticas no dia a dia que, somadas, contribuem para a saúde do planeta.")
-                            .padding(.bottom, 5)
-                        Text("**Conhecimento Acessível:** Tornamos a informação ambiental clara, acessível e engajadora para todos os públicos.")
-                                .padding(.bottom, 5)
-                        Text("**Comunidade e Colaboração:** Fomentamos um espaço de troca e aprendizado mútuo, onde todos podem compartilhar suas experiências e desafios.")
-                                .padding(.bottom, 5)
-                        Text("**Inovação e Adaptação:** Buscamos constantemente novas formas de educar e engajar, adaptando-nos aos desafios ambientais emergentes.")
-
-                    }.padding()
-                }
-
-                Button(action: {
-                    if !appDataStore.conteudosCompletos.contains(item.id) {
-                        appDataStore.toggleCompletion(for: item)
-                    }
-                    dismiss()
-                }) {
-                    Text("Compreendo e aceito estes valores")
-                        .font(.headline.weight(.bold))
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(Color.corFolhaClara)
-                        .foregroundColor(.white)
-                        .cornerRadius(12)
-                }
-                .padding()
-            }
-            .navigationTitle("Missão e Valores")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Fechar") { dismiss() }
-                }
-            }
-        }
-    }
-}
 struct MandatoryModulesView: View {
     @EnvironmentObject var appDataStore: AppDataStore
     @Environment(\.colorScheme) var colorScheme
@@ -1870,10 +1662,9 @@ struct MandatoryModulesView: View {
     @State private var itemParaAceite: ConteudoEducacional?
 
     private var mandatoryModules: [ConteudoEducacional] {
-        guard let role = appDataStore.userRole else { return [] }
-        return appDataStore.conteudos.filter { $0.isMandatoryFor?.contains(role) ?? false }
+        appDataStore.conteudos.filter { $0.isMandatory }
     }
-
+    
     private var allMandatoryCompleted: Bool {
         let mandatoryIDs = Set(mandatoryModules.map { $0.id })
         return mandatoryIDs.isSubset(of: appDataStore.conteudosCompletos)
@@ -1925,11 +1716,8 @@ struct MandatoryModulesView: View {
         }
         .background(theme.fundo.ignoresSafeArea())
         .sheet(item: $itemParaAceite) { item in
-            if item.titulo == "Missões e Valores" {
-                MissionAndValuesView(item: item)
-            } else {
-                ModuleView(item: item)
-            }
+            // CORREÇÃO: Removida a referência à 'MissionAndValuesView'
+            ModuleView(item: item)
         }
     }
 }
@@ -1976,8 +1764,13 @@ struct LoginView: View {
             theme.fundo.ignoresSafeArea()
             VStack {
                 Spacer()
+                Image(systemName: "leaf.fill")
+                    .font(.system(size: 80))
+                    .foregroundColor(.corFolhaClara)
+                    .padding(.bottom, 30)
+
                 VStack(spacing: 30) {
-                    Text("Bem-vindo(a) de volta!").font(.largeTitle.weight(.bold)).foregroundColor(theme.corTerra)
+                    Text("Bem-vindo(a)!").font(.largeTitle.weight(.bold)).foregroundColor(theme.corTerra)
                     VStack(spacing: 20) {
                         TextField("E-mail", text: $email).padding().background(theme.fundoCampoInput).cornerRadius(12).autocapitalization(.none).keyboardType(.emailAddress)
                         SecureField("Senha", text: $senha).padding().background(theme.fundoCampoInput).cornerRadius(12)
@@ -1999,7 +1792,6 @@ struct LoginView: View {
                 }.padding(.horizontal, 40)
                 Spacer()
             }
-            Button(action: { withAnimation { currentAuthScreen = .welcome } }) { Image(systemName: "arrow.left.circle.fill").font(.title).foregroundColor(.gray.opacity(0.5)) }.padding()
         }
         .sheet(isPresented: $showForgotPassword, onDismiss: {
             senha = ""
@@ -2009,7 +1801,11 @@ struct LoginView: View {
         }
         .alert(isPresented: $showAlert) { Alert(title: Text("Aviso de Login"), message: Text(alertMessage), dismissButton: .default(Text("OK"))) }
         .opacity(viewOpacity)
-        .onAppear { withAnimation(.easeIn(duration: 0.5)) { viewOpacity = 1.0 } }
+        .onAppear {
+            withAnimation(.easeIn(duration: 0.5).delay(0.2)) {
+                viewOpacity = 1.0
+            }
+        }
     }
 }
 struct TermsAndConditionsView: View {
@@ -2104,9 +1900,8 @@ struct CadastroView: View {
                     if let e = err { print("Erro ao definir DisplayName no Auth: \(e)") }
                     else { print("DisplayName definido no Auth com sucesso.") }
                 }
-
-                let roleSelecionado = appDataStore.userRole ?? .estudante
-                appDataStore.createUserProfile(userID: user.uid, name: trimmedName, role: roleSelecionado)
+                
+                appDataStore.createUserProfile(userID: user.uid, name: trimmedName)
 
                 do {
                     try Auth.auth().signOut()
@@ -2141,7 +1936,7 @@ struct CadastroView: View {
                 }.padding(.horizontal, 40)
                 Spacer()
             }
-            Button(action: { withAnimation { currentAuthScreen = .welcome } }) { Image(systemName: "arrow.left.circle.fill").font(.title).foregroundColor(.gray.opacity(0.5)) }.padding()
+            Button(action: { withAnimation { currentAuthScreen = .login } }) { Image(systemName: "arrow.left.circle.fill").font(.title).foregroundColor(.gray.opacity(0.5)) }.padding()
         }
         .alert(isPresented: $showAlert) {
             Alert(
@@ -2265,43 +2060,42 @@ struct ContentView: View {
     @EnvironmentObject var appDataStore: AppDataStore
 
     @State private var showSplash: Bool = true
-    @State private var currentAuthScreen: AuthScreen = .welcome
+    @State private var currentAuthScreen: AuthScreen = .login
     @State private var showTerms: Bool = false
 
     @State private var mandatoryModulesPresentedThisSession: Bool = false
+    
+    @State private var authOpacity: Double = 0.0
 
     var body: some View {
         ZStack {
             if let userProfile = appDataStore.userProfile {
-                let needsMandatory = !mandatoryModulesPresentedThisSession && !allMandatoryCompletedForCurrentUser
+                let needsMandatory = !mandatoryModulesPresentedThisSession && !allMandatoryCompleted
 
                 if needsMandatory {
                     MandatoryModulesView(showNextStep: $mandatoryModulesPresentedThisSession)
                         .transition(.opacity)
                         .zIndex(2)
                 } else {
-                    Group {
-                        if userProfile.role == .educador {
-                            EducadorMainView(logoutAction: logout)
-                        } else {
-                            EstudanteMainView(logoutAction: logout)
-                        }
-                    }
-                    .transition(.opacity)
+                    MainView(logoutAction: logout)
+                        .transition(.opacity)
                 }
             } else {
-                Group {
+                ZStack {
                     if showSplash {
                         SplashScreenView()
                             .onAppear {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                                    withAnimation(.easeOut) { showSplash = false }
+                                    withAnimation(.easeOut(duration: 0.5)) {
+                                        showSplash = false
+                                    }
+                                    withAnimation(.easeIn(duration: 0.5).delay(0.3)) {
+                                        authOpacity = 1.0
+                                    }
                                 }
                             }
                     } else {
                         switch currentAuthScreen {
-                        case .welcome:
-                            WelcomeView(currentAuthScreen: $currentAuthScreen)
                         case .login:
                             LoginView(currentAuthScreen: $currentAuthScreen, showTerms: $showTerms)
                         case .cadastro:
@@ -2309,6 +2103,7 @@ struct ContentView: View {
                         }
                     }
                 }
+                .opacity(showSplash ? 1.0 : authOpacity)
                 .transition(.opacity)
 
                 if showTerms {
@@ -2319,9 +2114,8 @@ struct ContentView: View {
         }
     }
 
-    private var allMandatoryCompletedForCurrentUser: Bool {
-        guard let role = appDataStore.userRole else { return false }
-        let mandatoryIDs = Set(appDataStore.conteudos.filter { $0.isMandatoryFor?.contains(role) ?? false }.map { $0.id })
+    private var allMandatoryCompleted: Bool {
+        let mandatoryIDs = Set(appDataStore.conteudos.filter { $0.isMandatory }.map { $0.id })
         return mandatoryIDs.isSubset(of: appDataStore.conteudosCompletos)
     }
 
@@ -2332,6 +2126,7 @@ struct ContentView: View {
             mandatoryModulesPresentedThisSession = false
             showTerms = false
             currentAuthScreen = .login
+            authOpacity = 1.0
         } catch let signOutError as NSError {
             print("Erro ao fazer logout: %@", signOutError)
         }
@@ -2441,24 +2236,20 @@ struct FeedbackCard: View {
 
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        // Preview da ContentView
         ContentView()
             .environmentObject(AppDataStore())
 
-        // Preview da lista de categoria
         NavigationView {
              CategoriaListView(categoriaTitulo: "Artigo", corCategoria: .purple, todosConteudos: AppDataStore().conteudos)
                  .environmentObject(AppDataStore())
          }
         .previewDisplayName("Lista Categoria Artigo")
 
-        // Preview da tela de Primeiros Passos
         MandatoryModulesView(showNextStep: .constant(false))
             .environmentObject(AppDataStore())
             .previewDisplayName("Primeiros Passos")
 
-        // Preview do Minigame
-        NavigationView{ // Para ver o título da barra
+        NavigationView{
             MinigameView()
                 .environmentObject(AppDataStore())
         }

@@ -6,6 +6,7 @@ import FirebaseAuth
 import FirebaseFirestore
 import FirebaseStorage
 import PhotosUI
+import WebKit // Importado para o Minigame
 
 // MARK: - Configurações e Modelos
 
@@ -105,15 +106,9 @@ class AppDataStore: ObservableObject {
         self.conteudos = [
             ConteudoEducacional(titulo: "Missões e Valores", subtitulo: "Módulo Obrigatório", descricaoCurta: "Conheça os pilares da plataforma Leafy.", icone: "heart.fill", cor: .pink, categoria: "Institucional", nivel: "Todos", isMandatory: true),
             ConteudoEducacional(titulo: "Compreender o Mercado Sustentável", subtitulo: "Módulo Obrigatório", descricaoCurta: "Sustentabilidade e o futuro profissional.", icone: "briefcase.fill", cor: .indigo, categoria: "Carreira", nivel: "Iniciante", isMandatory: true),
-            ConteudoEducacional(
-                titulo: "Minigame da Coleta",
-                subtitulo: "Jogue e Ganhe Pontos!",
-                descricaoCurta: "Ajude a separar o lixo corretamente.",
-                icone: "gamecontroller.fill",
-                cor: .corDestaque,
-                categoria: "Minigame",
-                nivel: "Todos"
-            ),
+            
+            // Minigame não está mais nesta lista, agora é uma Aba principal
+            
             ConteudoEducacional(titulo: "Hortas Urbanas e Permacultura", subtitulo: "Curso Prático", descricaoCurta: "Guia completo de plantio em pequenos espaços.", icone: "leaf.fill", cor: .corFolhaClara, categoria: "Curso", nivel: "Iniciante"),
             ConteudoEducacional(titulo: "Reciclagem e Economia Circular", subtitulo: "Curso Completo", descricaoCurta: "Técnicas e a economia circular.", icone: "arrow.triangle.2.circlepath", cor: .blue, categoria: "Curso", nivel: "Avançado"),
             ConteudoEducacional(titulo: "Energias Renováveis do Futuro", subtitulo: "Curso Técnico", descricaoCurta: "Explore a energia solar, eólica e outras fontes limpas.", icone: "wind", cor: .cyan, categoria: "Curso", nivel: "Avançado"),
@@ -141,10 +136,8 @@ class AppDataStore: ObservableObject {
         authStateHandle = Auth.auth().addStateDidChangeListener { [weak self] (auth, user) in
             guard let self = self else { return }
             if let user = user {
-                print("AppDataStore Auth Listener: User logged in (\(user.uid)). Starting profile listener.")
                 self.listenToUserProfile(userID: user.uid)
             } else {
-                print("AppDataStore Auth Listener: User logged out. Stopping listeners and clearing profile.")
                 self.stopListening()
                 DispatchQueue.main.async {
                     self.userProfile = nil
@@ -159,7 +152,6 @@ class AppDataStore: ObservableObject {
 
     func listenToUserProfile(userID: String) {
         userProfileListenerRegistration?.remove()
-        print("Listening for profile changes for user: \(userID)")
         userProfileListenerRegistration = db.collection("users").document(userID)
             .addSnapshotListener { [weak self] documentSnapshot, error in
                 guard let self = self else { return }
@@ -182,7 +174,6 @@ class AppDataStore: ObservableObject {
                     return
                 }
 
-                print("✅ Documento do perfil encontrado para \(userID).")
                 let data = document.data()
                 let name = data?["name"] as? String ?? "Nome Padrão"
                 let profileImageURL = data?["profileImageURL"] as? String
@@ -238,7 +229,6 @@ class AppDataStore: ObservableObject {
         guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
               let userID = Auth.auth().currentUser?.uid,
               let currentUserName = self.userProfile?.name else {
-            print("Usuário não logado, perfil não carregado ou mensagem vazia.")
             return
         }
 
@@ -494,6 +484,9 @@ struct MainView: View {
     let logoutAction: () -> Void
     var body: some View {
         TabView {
+            NavigationView { MinigameView(logoutAction: logoutAction) }
+                .tabItem { Label("Jogar", systemImage: "gamecontroller.fill") }
+            
             NavigationView { CursosView(logoutAction: logoutAction) }
                 .tabItem { Label("Cursos", systemImage: "book.fill") }
 
@@ -797,8 +790,6 @@ struct ViewRouter: View {
     @ViewBuilder
     var body: some View {
         switch item.categoria {
-        case "Minigame":
-            MinigameView()
         case "Curso":
             DetailView(item: item)
         case "Ebook":
@@ -919,11 +910,7 @@ struct CursoCardView: View {
 
     init(curso: ConteudoEducacional) {
         self.curso = curso
-        if curso.categoria == "Minigame" {
-            _progress = State(initialValue: 1.0)
-        } else {
-            _progress = State(initialValue: [0.2, 0.5, 0.8, 0.95].randomElement()!)
-        }
+        _progress = State(initialValue: [0.2, 0.5, 0.8, 0.95].randomElement()!)
     }
 
     var body: some View {
@@ -945,14 +932,8 @@ struct CursoCardView: View {
                     .foregroundColor(.primary)
                     .lineLimit(2)
 
-                if curso.categoria != "Minigame" {
-                    ProgressView(value: progress, total: 1.0)
-                        .tint(curso.cor)
-                } else {
-                    Text(curso.subtitulo)
-                        .font(.caption.weight(.medium))
-                        .foregroundColor(curso.cor)
-                }
+                ProgressView(value: progress, total: 1.0)
+                    .tint(curso.cor)
             }
 
             Spacer()
@@ -976,37 +957,11 @@ struct CursosView: View {
         appDataStore.conteudos.filter { $0.categoria == "Curso" && !$0.isMandatory }
     }
 
-    private var minigameItem: ConteudoEducacional? {
-        appDataStore.conteudos.first { $0.categoria == "Minigame" }
-    }
-
     var body: some View {
         let theme = AppTheme(colorScheme: colorScheme)
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
-
-                if let minigame = minigameItem {
-                    NavigationLink(destination: MinigameView()) {
-                        ZStack(alignment: .topTrailing) {
-                            DestaquePrincipalCard(item: minigame)
-
-                            HStack {
-                                Text("\(appDataStore.userProfile?.points ?? 0)")
-                                    .font(.subheadline.weight(.bold))
-                                Image(systemName: "star.fill")
-                                    .font(.caption.weight(.bold))
-                            }
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 5)
-                            .background(Color.black.opacity(0.3))
-                            .clipShape(Capsule())
-                            .padding(12)
-                        }
-                    }
-                    .padding(.horizontal)
-                }
-
+                
                 if !todosOsCursos.isEmpty {
                     Text("Trilhas de Aprendizagem")
                         .font(.title2.weight(.bold))
@@ -1021,6 +976,11 @@ struct CursosView: View {
                         }
                     }
                     .padding(.horizontal)
+                } else {
+                    Text("Novos cursos em breve!")
+                        .foregroundColor(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.top, 50)
                 }
 
             }.padding(.top)
@@ -1029,7 +989,19 @@ struct CursosView: View {
         .background(theme.fundo.ignoresSafeArea())
         .navigationTitle("Cursos")
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                HStack {
+                    Text("\(appDataStore.userProfile?.points ?? 0)")
+                        .font(.subheadline.weight(.bold))
+                    Image(systemName: "star.fill")
+                        .font(.caption.weight(.bold))
+                }
+                .foregroundColor(.corDestaque)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.corDestaque.opacity(0.15))
+                .clipShape(Capsule())
+                
                 Button(action: { showProfile = true }) {
                     Image(systemName: "person.circle.fill")
                 }
@@ -1045,7 +1017,7 @@ struct ExplorarView: View {
 
     private var destaques: [ConteudoEducacional] {
         Array(appDataStore.conteudos.filter {
-            ($0.categoria == "Artigo" || $0.categoria == "Video" || $0.categoria == "Ebook") && $0.categoria != "Minigame"
+            ($0.categoria == "Artigo" || $0.categoria == "Video" || $0.categoria == "Ebook")
         }.shuffled().prefix(4))
     }
 
@@ -1108,309 +1080,122 @@ struct ExplorarView: View {
     }
 }
 
-// MARK: - Minigame
-enum WasteCategory: String, CaseIterable {
-    case reciclavel = "Reciclável"
-    case organico = "Orgânico"
-    case comum = "Comum"
+// MARK: - Minigame (com WebView)
 
-    var color: Color {
-        switch self {
-        case .reciclavel: return .blue
-        case .organico: return .green
-        case .comum: return .gray
-        }
+struct WebView: UIViewRepresentable {
+    let url: URL
+
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        webView.scrollView.isScrollEnabled = false
+        return webView
     }
 
-    var icon: String {
-        switch self {
-        case .reciclavel: return "arrow.3.trianglepath"
-        case .organico: return "leaf.fill"
-        case .comum: return "trash.fill"
-        }
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        let request = URLRequest(url: url)
+        uiView.load(request)
     }
-}
-
-struct WasteItem: Identifiable, Equatable {
-    let id = UUID()
-    let name: String
-    let imageName: String
-    let category: WasteCategory
 }
 
 struct MinigameView: View {
     @EnvironmentObject var appDataStore: AppDataStore
     @Environment(\.colorScheme) var colorScheme
-    @Environment(\.dismiss) var dismiss
-
-    @State private var gamePhase: GamePhase = .ready
-    @State private var currentItem: WasteItem? = nil
-    @State private var sessionScore: Int = 0
-    @State private var itemsSorted: Int = 0
-    @State private var feedbackMessage: String? = nil
-    @State private var feedbackColor: Color = .green
-    @State private var sortingDisabled: Bool = false
-
-    let maxItemsToSort = 10
-    let itemsToChooseFrom: [WasteItem] = [
-        WasteItem(name: "Garrafa Plástica", imageName: "bottle.fill", category: .reciclavel),
-        WasteItem(name: "Casca de Banana", imageName: "carrot.fill", category: .organico),
-        WasteItem(name: "Papel Amassado", imageName: "doc.fill", category: .reciclavel),
-        WasteItem(name: "Lata de Alumínio", imageName: "cylinder.split.1x2.fill", category: .reciclavel),
-        WasteItem(name: "Resto de Maçã", imageName: "applelogo", category: .organico),
-        WasteItem(name: "Embalagem Salgadinho", imageName: "archivebox.fill", category: .comum),
-        WasteItem(name: "Caixa de Papelão", imageName: "shippingbox.fill", category: .reciclavel),
-        WasteItem(name: "Guardanapo Usado", imageName: "pano.fill", category: .comum),
-        WasteItem(name: "Folhas Secas", imageName: "leaf.fill", category: .organico),
-        WasteItem(name: "Vidro Quebrado", imageName: "rectangle.inset.filled.badge.record", category: .reciclavel)
-    ]
-
-    enum GamePhase {
-        case ready, playing, gameOver
-    }
-
-    @State private var iconScale: CGFloat = 1.0
-    @State private var particles: [Particle] = []
-    @State private var timer: Timer? = nil
+    let logoutAction: () -> Void
+    
+    @State private var showProfile = false
+    
+    private let gameURL = URL(string: "https://trex-runner.com/")!
+    
+    @State private var showPointsFeedback = false
 
     var body: some View {
         let theme = AppTheme(colorScheme: colorScheme)
-
-        GeometryReader { geometry in
+        
+        NavigationView {
             ZStack {
                 theme.fundo.ignoresSafeArea()
 
-                Canvas { context, size in
-                    for particle in particles {
-                        let rect = CGRect(x: particle.position.x, y: particle.position.y, width: particle.size, height: particle.size)
-                        context.fill(Path(ellipseIn: rect), with: .color(particle.color.opacity(particle.opacity)))
-                    }
-                }
-                .ignoresSafeArea()
-                .opacity(0.8)
+                VStack(spacing: 20) {
+                    
+                    Text("Toque na tela do jogo para começar!")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .padding(.top, 10)
 
-                VStack(spacing: 15) {
-
-                    HStack {
-                        HStack {
-                            Image(systemName: "star.fill")
-                            Text("Total: \(appDataStore.userProfile?.points ?? 0)")
-                        }
-                        .font(.headline.weight(.medium))
-                        .foregroundColor(.corDestaque)
-                        Spacer()
-                        HStack {
-                            Image(systemName: "gamecontroller.fill")
-                            Text("Rodada: \(sessionScore)")
-                        }
-                        .font(.headline.weight(.medium))
-                        .foregroundColor(.corFolhaClara)
-                    }
-                    .padding(.horizontal)
-                    .padding(.top, 5)
-
-                    if gamePhase == .playing || gamePhase == .gameOver {
-                        Text("Item \(itemsSorted) / \(maxItemsToSort)")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .padding(.bottom, 10)
-                    }
-
+                    WebView(url: gameURL)
+                        .frame(height: 150)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                        .padding(.horizontal)
+                    
                     Spacer()
 
-                    if gamePhase == .ready {
-                        VStack {
-                             Image(systemName: "recycle")
-                                .font(.system(size: 80))
-                                .foregroundColor(.gray)
-                                .padding(.bottom, 20)
-                            Text("Prepare-se para coletar!")
-                                .font(.title2.weight(.bold))
-                                .foregroundColor(theme.corTerra)
+                    Button(action: {
+                        appDataStore.addPoints(10)
+                        withAnimation {
+                            showPointsFeedback = true
                         }
-                    } else if gamePhase == .gameOver {
-                         VStack {
-                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 80))
-                                .foregroundColor(.corFolhaClara)
-                                .padding(.bottom, 20)
-                             Text("Fim da Rodada!")
-                                .font(.title2.weight(.bold))
-                                .foregroundColor(theme.corTerra)
-                             Text("Você fez \(sessionScore) pontos!")
-                                .font(.title3)
-                                .foregroundColor(.secondary)
-                         }
-                    }
-
-                    if gamePhase == .playing, let item = currentItem {
-                        VStack(spacing: 10) {
-                            Image(systemName: item.imageName)
-                                .font(.system(size: 100))
-                                .foregroundColor(item.category.color)
-                                .scaleEffect(iconScale)
-                                .frame(height: 120)
-
-                            Text(item.name)
-                                .font(.title2.weight(.semibold))
-                                .foregroundColor(.primary)
-
-                            if let message = feedbackMessage {
-                                Text(message)
-                                    .font(.headline)
-                                    .foregroundColor(feedbackColor)
-                                    .padding(5)
-                                    .background(feedbackColor.opacity(0.15))
-                                    .clipShape(Capsule())
-                                    .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                                    .id("feedback_\(itemsSorted)")
-                            } else {
-                                Text(" ").font(.headline).padding(5)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                            withAnimation {
+                                showPointsFeedback = false
                             }
                         }
-                        .transition(.scale.combined(with: .opacity))
-                        .id(item.id)
+                    }) {
+                        Label("Resgatar 10 Pontos", systemImage: "plus.circle.fill")
+                            .font(.headline.weight(.bold))
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(Color.corDestaque)
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
+                            .shadow(color: .corDestaque.opacity(0.5), radius: 8, x: 0, y: 4)
                     }
-
-                    Spacer()
-
-                    if gamePhase == .ready || gamePhase == .gameOver {
-                        Button(action: startGame) {
-                            Label(gamePhase == .ready ? "Começar Jogo" : "Jogar Novamente", systemImage: "play.fill")
-                                .font(.headline.weight(.bold))
-                                .frame(maxWidth: .infinity)
-                                .padding()
-                                .background(Color.corDestaque)
-                                .foregroundColor(.white)
-                                .cornerRadius(12)
-                                .shadow(color: .corDestaque.opacity(0.5), radius: 8, x: 0, y: 4)
-                        }
-                        .padding(.horizontal, 40)
-                    }
-
-                    if gamePhase == .playing {
-                        HStack(spacing: 15) {
-                            ForEach(WasteCategory.allCases, id: \.self) { category in
-                                Button {
-                                    sortItem(selectedCategory: category)
-                                } label: {
-                                    VStack {
-                                        Image(systemName: category.icon)
-                                            .font(.title)
-                                        Text(category.rawValue)
-                                            .font(.caption.weight(.semibold))
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 10)
-                                    .background(category.color.opacity(0.15))
-                                    .foregroundColor(category.color)
-                                    .cornerRadius(10)
-                                }
-                                .disabled(sortingDisabled)
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        .transition(.opacity)
-                    }
-
+                    .padding(.horizontal, 40)
+                    
                     Spacer().frame(height: 20)
                 }
-                .padding(.top, 20)
-            }
-            .onAppear {
-                startBackgroundAnimations(size: geometry.size)
-            }
-            .onDisappear {
-                stopAnimations()
-            }
-        }
-        .navigationTitle("Minigame da Coleta")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
-    func startGame() {
-        gamePhase = .playing
-        sessionScore = 0
-        itemsSorted = 0
-        feedbackMessage = nil
-        sortingDisabled = false
-        showNextItem()
-        withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
-            iconScale = 1.10
-        }
-    }
-
-    func showNextItem() {
-        currentItem = itemsToChooseFrom.randomElement()
-    }
-
-    func sortItem(selectedCategory: WasteCategory) {
-        guard let currentItem = currentItem else { return }
-
-        sortingDisabled = true
-        itemsSorted += 1
-
-        if selectedCategory == currentItem.category {
-            sessionScore += 10
-            feedbackMessage = "Correto! +10"
-            feedbackColor = .green
-        } else {
-            feedbackMessage = "Ops! Era \(currentItem.category.rawValue)"
-            feedbackColor = .red
-        }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-            self.feedbackMessage = nil
-
-            if itemsSorted >= maxItemsToSort {
-                endGame()
-            } else {
-                withAnimation {
-                    showNextItem()
+                
+                if showPointsFeedback {
+                    Text("+10 Pontos!")
+                        .font(.largeTitle.weight(.bold))
+                        .foregroundColor(.white)
+                        .padding(20)
+                        .background(Color.corFolhaClara.opacity(0.8))
+                        .clipShape(Capsule())
+                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                        .zIndex(1)
                 }
-                sortingDisabled = false
             }
-        }
-    }
+            .navigationTitle("Jogar")
+            .toolbar {
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    HStack {
+                        Text("\(appDataStore.userProfile?.points ?? 0)")
+                            .font(.subheadline.weight(.bold))
+                        Image(systemName: "star.fill")
+                            .font(.caption.weight(.bold))
+                    }
+                    .foregroundColor(.corDestaque)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.corDestaque.opacity(0.15))
+                    .clipShape(Capsule())
 
-    func endGame() {
-        gamePhase = .gameOver
-        appDataStore.addPoints(sessionScore)
-        sortingDisabled = false
-        withAnimation(.easeInOut(duration: 0.2)) {
-            iconScale = 1.0
-        }
-    }
-
-    func startBackgroundAnimations(size: CGSize) {
-        createInitialParticles(size: size)
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { _ in
-            updateParticles(size: size)
-        }
-    }
-
-    func stopAnimations() {
-        timer?.invalidate()
-        timer = nil
-        particles.removeAll()
-    }
-
-    func createInitialParticles(size: CGSize) {
-        particles.removeAll()
-        for _ in 0..<30 {
-            particles.append(Particle.createRandomMovingUp(in: size))
-        }
-    }
-
-    func updateParticles(size: CGSize) {
-        for index in particles.indices {
-            particles[index].position.y -= particles[index].speed * (1.0 / 60.0)
-            if particles[index].position.y < -particles[index].size {
-                particles[index] = Particle.createRandomMovingUp(in: size)
+                    Button(action: { showProfile = true }) {
+                        Image(systemName: "person.circle.fill")
+                    }
+                }
+            }
+            .sheet(isPresented: $showProfile) {
+                ProfileView(logoutAction: logoutAction)
             }
         }
     }
 }
+
 
 // MARK: - Views de Perfil e Configurações
 struct ProfileView: View {
@@ -1716,7 +1501,6 @@ struct MandatoryModulesView: View {
         }
         .background(theme.fundo.ignoresSafeArea())
         .sheet(item: $itemParaAceite) { item in
-            // CORREÇÃO: Removida a referência à 'MissionAndValuesView'
             ModuleView(item: item)
         }
     }
@@ -2250,7 +2034,7 @@ struct ContentView_Previews: PreviewProvider {
             .previewDisplayName("Primeiros Passos")
 
         NavigationView{
-            MinigameView()
+            MinigameView(logoutAction: {})
                 .environmentObject(AppDataStore())
         }
         .previewDisplayName("Minigame View")

@@ -7,10 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9E0248F52EB4CFE100D0E2FE /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9E0248F42EB4CFE100D0E2FE /* GoogleService-Info.plist */; };
 		9ECF54B42EB231920044A16C /* LeafyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECF54B02EB231910044A16C /* LeafyApp.swift */; };
 		9ECF54B52EB231920044A16C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECF54AD2EB231910044A16C /* ContentView.swift */; };
 		9ECF54B82EB234D70044A16C /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 9ECF54B72EB234D70044A16C /* FirebaseStorage */; };
-		9ECF54BA2EB236340044A16C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9ECF54B92EB236340044A16C /* GoogleService-Info.plist */; };
 		9EFB3BE52EAA4EA600682170 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 9EFB3BE42EAA4EA600682170 /* FirebaseCore */; };
 		9EFB3BE72EAA4EB300682170 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 9EFB3BE62EAA4EB300682170 /* FirebaseAuth */; };
 		9EFB3BE92EAA4EB800682170 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 9EFB3BE82EAA4EB800682170 /* FirebaseFirestore */; };
@@ -18,11 +18,10 @@
 
 /* Begin PBXFileReference section */
 		0FA3081A21C4A2696AA000F9 /* Pods_Leafy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Leafy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E0248F42EB4CFE100D0E2FE /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		9E7472F12EA659B8002A7FBD /* Leafy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Leafy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9ECF54AD2EB231910044A16C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		9ECF54AF2EB231910044A16C /* Leafy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Leafy.xcodeproj; sourceTree = "<group>"; };
 		9ECF54B02EB231910044A16C /* LeafyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeafyApp.swift; sourceTree = "<group>"; };
-		9ECF54B92EB236340044A16C /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		9ECF54BF2EB244EE0044A16C /* Leafy-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Leafy-Bridging-Header.h"; sourceTree = "<group>"; };
 		9EFB3C2E2EAA719E00682170 /* Leafy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Leafy.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -47,8 +46,7 @@
 			children = (
 				9ECF54BF2EB244EE0044A16C /* Leafy-Bridging-Header.h */,
 				9ECF54AD2EB231910044A16C /* ContentView.swift */,
-				9ECF54B92EB236340044A16C /* GoogleService-Info.plist */,
-				9ECF54AF2EB231910044A16C /* Leafy.xcodeproj */,
+				9E0248F42EB4CFE100D0E2FE /* GoogleService-Info.plist */,
 				9ECF54B02EB231910044A16C /* LeafyApp.swift */,
 				9EFB3BE32EAA4EA600682170 /* Frameworks */,
 				9E7472F22EA659B8002A7FBD /* Products */,
@@ -60,11 +58,6 @@
 			children = (
 				9E7472F12EA659B8002A7FBD /* Leafy.app */,
 			);
-			name = Products;
-			sourceTree = "<group>";
-		};
-		9ECF54B12EB231910044A16C /* Products */ = {
-			isa = PBXGroup;
 			name = Products;
 			sourceTree = "<group>";
 		};
@@ -116,6 +109,9 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
+				KnownAssetTags = (
+					New,
+				);
 				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 2600;
 				TargetAttributes = {
@@ -145,10 +141,6 @@
 					ProductGroup = 9EFB3C2F2EAA719E00682170 /* Products */;
 					ProjectRef = 9EFB3C2E2EAA719E00682170 /* Leafy.xcodeproj */;
 				},
-				{
-					ProductGroup = 9ECF54B12EB231910044A16C /* Products */;
-					ProjectRef = 9ECF54AF2EB231910044A16C /* Leafy.xcodeproj */;
-				},
 			);
 			projectRoot = "";
 			targets = (
@@ -162,7 +154,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				9ECF54BA2EB236340044A16C /* GoogleService-Info.plist in Resources */,
+				9E0248F52EB4CFE100D0E2FE /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

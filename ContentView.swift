@@ -952,10 +952,11 @@ struct CursosView: View {
     @Environment(\.colorScheme) var colorScheme
     @State private var showProfile = false
 
-    // PROPRIEDADES DO MINIGAME
+    // MARK: - Propriedades do Minigame
     @State private var showPointsFeedback = false
-    @State private var showMinigame = false // NOVO ESTADO PARA CARREGAR O JOGO
-    private let gameURL = URL(string: "https://trex-runner.com/")!
+    @State private var showMinigame = false // Controla o carregamento
+    // URL alterada para um jogo funcional de swipe (2048)
+    private let gameURL = URL(string: "https://play2048.co/")!
 
     private var todosOsCursos: [ConteudoEducacional] {
         appDataStore.conteudos.filter { $0.categoria == "Curso" && !$0.isMandatory }
@@ -968,20 +969,20 @@ struct CursosView: View {
                 
                 // MARK: - Minigame Integrado
                 ZStack {
-                    // O VStack agora contém a lógica de mostrar o placeholder OU o jogo
+                    // O contêiner do card do minigame
                     VStack(spacing: 20) {
                         
                         if showMinigame {
                             // --- O Jogo (WebView) ---
                             WebView(url: gameURL)
-                                .frame(height: 150)
-                                .cornerRadius(12)
+                                .frame(height: 350) // ALTURA AUMENTADA
+                                .cornerRadius(12) // Arredondamento para o conteúdo da webview
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12)
                                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
                                 )
-                                .padding(.horizontal)
-                            
+                            // Padding horizontal removido para ir de ponta a ponta
+
                             // --- Botão de Resgatar Pontos ---
                             Button(action: {
                                 appDataStore.addPoints(10)
@@ -1003,14 +1004,14 @@ struct CursosView: View {
                                     .cornerRadius(12)
                                     .shadow(color: .corDestaque.opacity(0.5), radius: 8, x: 0, y: 4)
                             }
-                            .padding(.horizontal, 40)
+                            .padding(.horizontal, 40) // Padding interno do botão
                             
                         } else {
                             // --- Placeholder (Antes de carregar o jogo) ---
                             ZStack {
                                 RoundedRectangle(cornerRadius: 12)
-                                    .fill(theme.fundoCard.opacity(0.5)) // Um fundo leve
-                                    .frame(height: 150)
+                                    .fill(theme.fundoCard.opacity(0.5)) // Fundo do placeholder
+                                    .frame(height: 350) // ALTURA AUMENTADA
 
                                 VStack {
                                     Image(systemName: "gamecontroller.fill")
@@ -1022,20 +1023,20 @@ struct CursosView: View {
                                         .padding(.top, 5)
                                 }
                             }
-                            .padding(.horizontal)
+                            // Padding horizontal removido
                             .onTapGesture {
                                 withAnimation {
-                                    showMinigame = true // Ativa o jogo
+                                    showMinigame = true // Ativa o jogo ao tocar
                                 }
                             }
                         }
                     }
                     .padding(.vertical) // Padding vertical dentro do card
                     .background(theme.fundoCard) // Fundo do card
-                    .cornerRadius(15) // Bordas arredondadas
-                    .padding(.horizontal) // Espaçamento lateral do card
+                    .cornerRadius(15) // Bordas arredondadas do card
+                    // Padding horizontal do card removido
                     
-                    // Feedback de pontos (continua flutuando sobre o ZStack)
+                    // Feedback de pontos (flutua sobre o ZStack)
                     if showPointsFeedback {
                         Text("+10 Pontos!")
                             .font(.largeTitle.weight(.bold))
@@ -1047,6 +1048,7 @@ struct CursosView: View {
                             .zIndex(1)
                     }
                 }
+                .padding(.horizontal) // Adiciona padding horizontal ao ZStack para centralizá-lo
                 // MARK: - Fim do Minigame
 
                 if !todosOsCursos.isEmpty {
@@ -1174,7 +1176,7 @@ struct WebView: UIViewRepresentable {
 
     func makeUIView(context: Context) -> WKWebView {
         let webView = WKWebView()
-        webView.scrollView.isScrollEnabled = false
+        webView.scrollView.isScrollEnabled = false // Mantido para o 2048
         return webView
     }
 

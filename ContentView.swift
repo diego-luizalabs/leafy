@@ -484,8 +484,7 @@ struct MainView: View {
     let logoutAction: () -> Void
     var body: some View {
         TabView {
-            NavigationView { MinigameView(logoutAction: logoutAction) }
-                .tabItem { Label("Jogar", systemImage: "gamecontroller.fill") }
+            // A ABA "JOGAR" FOI REMOVIDA DAQUI
             
             NavigationView { CursosView(logoutAction: logoutAction) }
                 .tabItem { Label("Cursos", systemImage: "book.fill") }
@@ -953,6 +952,11 @@ struct CursosView: View {
     @Environment(\.colorScheme) var colorScheme
     @State private var showProfile = false
 
+    // PROPRIEDADES DO MINIGAME
+    @State private var showPointsFeedback = false
+    @State private var showMinigame = false // NOVO ESTADO PARA CARREGAR O JOGO
+    private let gameURL = URL(string: "https://trex-runner.com/")!
+
     private var todosOsCursos: [ConteudoEducacional] {
         appDataStore.conteudos.filter { $0.categoria == "Curso" && !$0.isMandatory }
     }
@@ -962,6 +966,89 @@ struct CursosView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
                 
+                // MARK: - Minigame Integrado
+                ZStack {
+                    // O VStack agora contém a lógica de mostrar o placeholder OU o jogo
+                    VStack(spacing: 20) {
+                        
+                        if showMinigame {
+                            // --- O Jogo (WebView) ---
+                            WebView(url: gameURL)
+                                .frame(height: 150)
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                )
+                                .padding(.horizontal)
+                            
+                            // --- Botão de Resgatar Pontos ---
+                            Button(action: {
+                                appDataStore.addPoints(10)
+                                withAnimation {
+                                    showPointsFeedback = true
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    withAnimation {
+                                        showPointsFeedback = false
+                                    }
+                                }
+                            }) {
+                                Label("Resgatar 10 Pontos", systemImage: "plus.circle.fill")
+                                    .font(.headline.weight(.bold))
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.corDestaque)
+                                    .foregroundColor(.white)
+                                    .cornerRadius(12)
+                                    .shadow(color: .corDestaque.opacity(0.5), radius: 8, x: 0, y: 4)
+                            }
+                            .padding(.horizontal, 40)
+                            
+                        } else {
+                            // --- Placeholder (Antes de carregar o jogo) ---
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(theme.fundoCard.opacity(0.5)) // Um fundo leve
+                                    .frame(height: 150)
+
+                                VStack {
+                                    Image(systemName: "gamecontroller.fill")
+                                        .font(.largeTitle)
+                                        .foregroundColor(.secondary)
+                                    Text("Toque para Carregar o Minigame")
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                        .padding(.top, 5)
+                                }
+                            }
+                            .padding(.horizontal)
+                            .onTapGesture {
+                                withAnimation {
+                                    showMinigame = true // Ativa o jogo
+                                }
+                            }
+                        }
+                    }
+                    .padding(.vertical) // Padding vertical dentro do card
+                    .background(theme.fundoCard) // Fundo do card
+                    .cornerRadius(15) // Bordas arredondadas
+                    .padding(.horizontal) // Espaçamento lateral do card
+                    
+                    // Feedback de pontos (continua flutuando sobre o ZStack)
+                    if showPointsFeedback {
+                        Text("+10 Pontos!")
+                            .font(.largeTitle.weight(.bold))
+                            .foregroundColor(.white)
+                            .padding(20)
+                            .background(Color.corFolhaClara.opacity(0.8))
+                            .clipShape(Capsule())
+                            .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                            .zIndex(1)
+                    }
+                }
+                // MARK: - Fim do Minigame
+
                 if !todosOsCursos.isEmpty {
                     Text("Trilhas de Aprendizagem")
                         .font(.title2.weight(.bold))
@@ -988,7 +1075,7 @@ struct CursosView: View {
         .buttonStyle(.plain)
         .background(theme.fundo.ignoresSafeArea())
         .navigationTitle("Cursos")
-        .toolbar {
+        .toolbar { // A Toolbar com os pontos
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 HStack {
                     Text("\(appDataStore.userProfile?.points ?? 0)")
@@ -1097,104 +1184,8 @@ struct WebView: UIViewRepresentable {
     }
 }
 
-struct MinigameView: View {
-    @EnvironmentObject var appDataStore: AppDataStore
-    @Environment(\.colorScheme) var colorScheme
-    let logoutAction: () -> Void
-    
-    @State private var showProfile = false
-    
-    private let gameURL = URL(string: "https://trex-runner.com/")!
-    
-    @State private var showPointsFeedback = false
-
-    var body: some View {
-        let theme = AppTheme(colorScheme: colorScheme)
-        
-        NavigationView {
-            ZStack {
-                theme.fundo.ignoresSafeArea()
-
-                VStack(spacing: 20) {
-                    
-                    Text("Toque na tela do jogo para começar!")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 10)
-
-                    WebView(url: gameURL)
-                        .frame(height: 150)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
-                        .padding(.horizontal)
-                    
-                    Spacer()
-
-                    Button(action: {
-                        appDataStore.addPoints(10)
-                        withAnimation {
-                            showPointsFeedback = true
-                        }
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                            withAnimation {
-                                showPointsFeedback = false
-                            }
-                        }
-                    }) {
-                        Label("Resgatar 10 Pontos", systemImage: "plus.circle.fill")
-                            .font(.headline.weight(.bold))
-                            .frame(maxWidth: .infinity)
-                            .padding()
-                            .background(Color.corDestaque)
-                            .foregroundColor(.white)
-                            .cornerRadius(12)
-                            .shadow(color: .corDestaque.opacity(0.5), radius: 8, x: 0, y: 4)
-                    }
-                    .padding(.horizontal, 40)
-                    
-                    Spacer().frame(height: 20)
-                }
-                
-                if showPointsFeedback {
-                    Text("+10 Pontos!")
-                        .font(.largeTitle.weight(.bold))
-                        .foregroundColor(.white)
-                        .padding(20)
-                        .background(Color.corFolhaClara.opacity(0.8))
-                        .clipShape(Capsule())
-                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                        .zIndex(1)
-                }
-            }
-            .navigationTitle("Jogar")
-            .toolbar {
-                ToolbarItemGroup(placement: .navigationBarTrailing) {
-                    HStack {
-                        Text("\(appDataStore.userProfile?.points ?? 0)")
-                            .font(.subheadline.weight(.bold))
-                        Image(systemName: "star.fill")
-                            .font(.caption.weight(.bold))
-                    }
-                    .foregroundColor(.corDestaque)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.corDestaque.opacity(0.15))
-                    .clipShape(Capsule())
-
-                    Button(action: { showProfile = true }) {
-                        Image(systemName: "person.circle.fill")
-                    }
-                }
-            }
-            .sheet(isPresented: $showProfile) {
-                ProfileView(logoutAction: logoutAction)
-            }
-        }
-    }
-}
+// A struct MinigameView foi REMOVIDA
+// Seu conteúdo agora está dentro da CursosView
 
 
 // MARK: - Views de Perfil e Configurações
@@ -2032,11 +2023,7 @@ struct ContentView_Previews: PreviewProvider {
         MandatoryModulesView(showNextStep: .constant(false))
             .environmentObject(AppDataStore())
             .previewDisplayName("Primeiros Passos")
-
-        NavigationView{
-            MinigameView(logoutAction: {})
-                .environmentObject(AppDataStore())
-        }
-        .previewDisplayName("Minigame View")
+        
+        // A PREVIEW DA MINIGAMEVIEW FOI REMOVIDA
     }
 }

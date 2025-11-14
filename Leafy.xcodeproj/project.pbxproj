@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		9E0248F52EB4CFE100D0E2FE /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9E0248F42EB4CFE100D0E2FE /* GoogleService-Info.plist */; };
+		9E850AEC2EC7735E00BE9E2E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9E850AEB2EC7735E00BE9E2E /* Assets.xcassets */; };
+		9E850AEF2EC7877D00BE9E2E /* logo-escuro.png in Resources */ = {isa = PBXBuildFile; fileRef = 9E850AEE2EC7877D00BE9E2E /* logo-escuro.png */; };
+		9E850AF02EC7877D00BE9E2E /* logo-claro.png in Resources */ = {isa = PBXBuildFile; fileRef = 9E850AED2EC7877D00BE9E2E /* logo-claro.png */; };
 		9ECF54B42EB231920044A16C /* LeafyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECF54B02EB231910044A16C /* LeafyApp.swift */; };
 		9ECF54B52EB231920044A16C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECF54AD2EB231910044A16C /* ContentView.swift */; };
 		9ECF54B82EB234D70044A16C /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 9ECF54B72EB234D70044A16C /* FirebaseStorage */; };
@@ -20,6 +23,10 @@
 		0FA3081A21C4A2696AA000F9 /* Pods_Leafy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Leafy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E0248F42EB4CFE100D0E2FE /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		9E7472F12EA659B8002A7FBD /* Leafy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Leafy.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E850AEB2EC7735E00BE9E2E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9E850AED2EC7877D00BE9E2E /* logo-claro.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "logo-claro.png"; sourceTree = "<group>"; };
+		9E850AEE2EC7877D00BE9E2E /* logo-escuro.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "logo-escuro.png"; sourceTree = "<group>"; };
+		9E850AF12EC7886B00BE9E2E /* Leafy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Leafy-Info.plist"; sourceTree = "<group>"; };
 		9ECF54AD2EB231910044A16C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9ECF54B02EB231910044A16C /* LeafyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeafyApp.swift; sourceTree = "<group>"; };
 		9ECF54BF2EB244EE0044A16C /* Leafy-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Leafy-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -44,6 +51,10 @@
 		9E7472E82EA659B8002A7FBD = {
 			isa = PBXGroup;
 			children = (
+				9E850AF12EC7886B00BE9E2E /* Leafy-Info.plist */,
+				9E850AED2EC7877D00BE9E2E /* logo-claro.png */,
+				9E850AEE2EC7877D00BE9E2E /* logo-escuro.png */,
+				9E850AEB2EC7735E00BE9E2E /* Assets.xcassets */,
 				9ECF54BF2EB244EE0044A16C /* Leafy-Bridging-Header.h */,
 				9ECF54AD2EB231910044A16C /* ContentView.swift */,
 				9E0248F42EB4CFE100D0E2FE /* GoogleService-Info.plist */,
@@ -154,6 +165,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9E850AEF2EC7877D00BE9E2E /* logo-escuro.png in Resources */,
+				9E850AF02EC7877D00BE9E2E /* logo-claro.png in Resources */,
+				9E850AEC2EC7735E00BE9E2E /* Assets.xcassets in Resources */,
 				9E0248F52EB4CFE100D0E2FE /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -302,6 +316,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Leafy-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -338,6 +353,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Leafy-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

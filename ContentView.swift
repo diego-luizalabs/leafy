@@ -1,3 +1,6 @@
+// MARK: - ARQUIVO DE VIEWS (ContentView.swift)
+// Este arquivo contém TODAS as suas views e lógica do AppDataStore.
+
 import SwiftUI
 import Combine
 import Foundation
@@ -6,7 +9,7 @@ import FirebaseAuth
 import FirebaseFirestore
 import FirebaseStorage
 import PhotosUI
-import WebKit // Importado para o Minigame
+import WebKit // Necessário para a WebView do Ebook/Safari
 
 // MARK: - Configurações e Modelos
 
@@ -42,36 +45,10 @@ struct ChatMessage: Identifiable, Equatable {
     let id: String
     let text: String
     let user: String
+    let userID: String
+    let userPhotoURL: String?
     let isCurrentUser: Bool
     let timestamp: Date
-}
-
-struct Particle: Identifiable {
-    let id = UUID()
-    var position: CGPoint
-    let size: CGFloat, speed: CGFloat, color: Color, opacity: Double
-
-    static func createRandom(in size: CGSize) -> Particle {
-        let color = [Color.corFolhaClara.opacity(0.8), Color.corDestaque.opacity(0.7), .white.opacity(0.9)].randomElement()!
-        return Particle(
-            position: CGPoint(x: .random(in: 0...size.width), y: .random(in: size.height...size.height + 100)),
-            size: .random(in: 4...12),
-            speed: .random(in: 50...100),
-            color: color,
-            opacity: .random(in: 0.5...1.0)
-        )
-    }
-
-    static func createRandomMovingUp(in size: CGSize) -> Particle {
-        let color = [Color.corFolhaClara.opacity(0.6), Color.corDestaque.opacity(0.5), .white.opacity(0.7)].randomElement()!
-        return Particle(
-            position: CGPoint(x: .random(in: 0...size.width), y: .random(in: size.height...size.height + 50)),
-            size: .random(in: 3...8),
-            speed: .random(in: 30...80),
-            color: color,
-            opacity: .random(in: 0.3...0.8)
-        )
-    }
 }
 
 struct UserProfile: Codable, Identifiable {
@@ -80,9 +57,10 @@ struct UserProfile: Codable, Identifiable {
     var profileImageURL: String?
     var bio: String?
     var points: Int
+    var completedContent: [String]? // Salva os IDs como String
 }
 
-// MARK: - AppDataStore (Firebase)
+// MARK: - AppDataStore (Firebase + Cache Local)
 
 class AppDataStore: ObservableObject {
     @Published var conteudos: [ConteudoEducacional]
@@ -101,34 +79,88 @@ class AppDataStore: ObservableObject {
     private var chatListenerRegistration: ListenerRegistration?
     private var userProfileListenerRegistration: ListenerRegistration?
     private var authStateHandle: AuthStateDidChangeListenerHandle?
+    
+    private let userProfileCacheKey = "cachedUserProfile_v1"
 
     init() {
         self.conteudos = [
-            ConteudoEducacional(titulo: "Missões e Valores", subtitulo: "Módulo Obrigatório", descricaoCurta: "Conheça os pilares da plataforma Leafy.", icone: "heart.fill", cor: .pink, categoria: "Institucional", nivel: "Todos", isMandatory: true),
-            ConteudoEducacional(titulo: "Compreender o Mercado Sustentável", subtitulo: "Módulo Obrigatório", descricaoCurta: "Sustentabilidade e o futuro profissional.", icone: "briefcase.fill", cor: .indigo, categoria: "Carreira", nivel: "Iniciante", isMandatory: true),
+            // Módulos Obrigatórios (Mais conteúdo)
+            ConteudoEducacional(titulo: "Missões e Valores", subtitulo: "Módulo Obrigatório", descricaoCurta: "Conheça os pilares da plataforma Leafy.", icone: "heart.fill", cor: .pink, categoria: "Institucional", nivel: "Todos", isMandatory: true, textoCompleto: "Bem-vindo à Leafy!\n\nNossa missão é democratizar o conhecimento sobre sustentabilidade. Acreditamos que pequenas ações, quando somadas, geram um impacto global massivo. Nosso objetivo não é apenas ensinar sobre o meio ambiente, mas inspirar uma mudança real de hábitos.\n\nNossos valores são baseados em 3 pilares:\n1.  **Educação Acessível:** Conhecimento deve ser livre e fácil de entender.\n2.  **Comunidade:** Ninguém muda o mundo sozinho. Juntos, compartilhamos ideias e nos apoiamos.\n3.  **Ação Prática:** Aprender é o primeiro passo. Agir é o que realmente importa."),
+            ConteudoEducacional(titulo: "Compreender o Mercado Sustentável", subtitulo: "Módulo Obrigatório", descricaoCurta: "Sustentabilidade e o futuro profissional.", icone: "briefcase.fill", cor: .indigo, categoria: "Carreira", nivel: "Iniciante", isMandatory: true, textoCompleto: "O Futuro é Verde\n\nO mercado de trabalho está mudando rapidamente. Empresas não são mais avaliadas apenas por seu lucro, mas por seu impacto social e ambiental (ESG).\n\nProfissionais que entendem de sustentabilidade, economia circular e responsabilidade social não são mais um nicho, são uma necessidade. Este módulo irá mostrar como a sustentabilidade está abrindo novas portas de carreira em todas as áreas, da moda à finanças."),
             
-            // Minigame não está mais nesta lista, agora é uma Aba principal
+            // Cursos (Mais conteúdo)
+            ConteudoEducacional(titulo: "Hortas Urbanas e Permacultura", subtitulo: "Curso Prático", descricaoCurta: "Guia completo de plantio em pequenos espaços.", icone: "leaf.fill", cor: .corFolhaClara, categoria: "Curso", nivel: "Iniciante", textoCompleto: "Começando sua Horta\n\nTer uma horta em casa é um ato revolucionário. É reconectar-se com o ciclo do alimento, reduzir o desperdício e garantir comida saudável na sua mesa. Mesmo que você more em um apartamento pequeno, é possível plantar.\n\nNeste curso, vamos cobrir:\n* Vasos autoirrigáveis.\n* Escolhendo o substrato correto.\n* O que plantar: temperos, hortaliças e PANCs (Plantas Alimentícias Não Convencionais).\n* Como combater pragas sem veneno.\n* Princípios básicos de permacultura para aplicar na sua varanda."),
+            ConteudoEducacional(titulo: "Reciclagem e Economia Circular", subtitulo: "Curso Completo", descricaoCurta: "Técnicas e a economia circular.", icone: "arrow.triangle.2.circlepath", cor: .blue, categoria: "Curso", nivel: "Avançado", textoCompleto: "Além da Lixeira Colorida\n\nA reciclagem é o último passo, não o primeiro. Antes dela, precisamos Repensar, Reduzir e Reutilizar. Este curso vai a fundo na cadeia de reciclagem, mostrando os desafios do processo no Brasil.\n\nMergulharemos no conceito de Economia Circular, um modelo econômico que propõe o fim do 'lixo'. Em vez de 'extrair, usar e descartar', a economia circular foca em 'reduzir, reutilizar, remanufaturar e reciclar', criando um ciclo fechado onde materiais são reaproveitados ao máximo, gerando valor e não poluição."),
+            ConteudoEducacional(titulo: "Energias Renováveis do Futuro", subtitulo: "Curso Técnico", descricaoCurta: "Explore a energia solar, eólica e outras fontes limpas.", icone: "wind", cor: .cyan, categoria: "Curso", nivel: "Avançado", textoCompleto: "A Transição Energética\n\nO mundo precisa desesperadamente sair dos combustíveis fósseis. Neste curso, faremos uma análise técnica das principais fontes de energia limpa: solar (fotovoltaica), eólica (onshore e offshore), hidrelétrica e até fontes emergentes como hidrogênio verde e energia das marés."),
+            ConteudoEducacional(titulo: "O Saneamento Básico", subtitulo: "Saúde e Meio Ambiente", descricaoCurta: "Entenda a importância do saneamento para a saúde pública.", icone: "drop.fill", cor: .cyan, categoria: "Curso", nivel: "Intermediário", textoCompleto: "Saneamento é Dignidade\n\nSaneamento básico não é apenas água na torneira. É coleta e tratamento de esgoto, drenagem de águas pluviais e coleta de lixo. A falta de saneamento é a principal causa de muitas doenças em países em desenvolvimento. Vamos explorar o cenário brasileiro e como a universalização do saneamento impacta diretamente a saúde, a educação e o meio ambiente."),
+            ConteudoEducacional(titulo: "Descarte de Lixo Eletrônico", subtitulo: "Lixo Eletrônico", descricaoCurta: "O que fazer com celulares, pilhas e computadores antigos.", icone: "iphone.gen1.slash", cor: .blue, categoria: "Curso", nivel: "Intermediário", textoCompleto: "O Perigo Invisível\n\nSeu celular antigo contém metais pesados como chumbo, mercúrio e cádmio. Quando descartado no lixo comum, ele contamina o solo e os lençóis freáticos. O 'e-lixo' é um dos que mais cresce no mundo. Aprenda sobre a logística reversa, seus direitos como consumidor e onde encontrar postos de coleta adequados."),
+            ConteudoEducacional(titulo: "A Ameaça dos Oceanos", subtitulo: "Ecossistemas Marinhos", descricaoCurta: "Como o lixo plástico impacta a vida marinha.", icone: "trash.circle.fill", cor: .teal, categoria: "Curso", nivel: "Avançado", textoCompleto: "Um Mar de Plástico\n\nEstima-se que até 2050 haverá mais peso em plástico nos oceanos do que em peixes. Este curso explora o impacto dos giros de lixo oceânicos, o problema dos microplásticos e como a poluição afeta desde o plâncton até as grandes baleias. Também discutiremos soluções, como ONGs de limpeza de praia e tecnologias de captura de plástico em rios."),
+            ConteudoEducacional(titulo: "A Revolução da Energia Solar", subtitulo: "Energias Renováveis", descricaoCurta: "Como a energia solar está moldando o futuro.", icone: "sun.max.trianglebadge.exclamationmark.fill", cor: .orange, categoria: "Curso", nivel: "Iniciante", textoCompleto: "O Sol é para Todos\n\nA energia solar é democrática: está disponível em quase todos os lugares. Vamos desmistificar a instalação de painéis solares, explicar a diferença entre geração on-grid e off-grid, e como você pode (em muitos lugares) 'vender' o excesso de energia de volta para a rede elétrica, gerando créditos na sua conta de luz."),
+            ConteudoEducacional(titulo: "O Problema do Isopor", subtitulo: "Descarte Correto", descricaoCurta: "Aprenda a descartar e reciclar o isopor corretamente.", icone: "archivebox.fill", cor: .gray, categoria: "Curso", nivel: "Iniciante", textoCompleto: "Isopor é Reciclável? Sim, mas...\n\nTecnicamente, o EPS (Poliestireno Expandido) é 100% reciclável. O problema é que ele é 98% ar, o que torna seu transporte e processamento muito caros. Poucas cooperativas aceitam. Vamos ver alternativas ao isopor e qual a maneira correta de descartá-lo para que ele não acabe em aterros, onde leva centenas de anos para se decompor."),
             
-            ConteudoEducacional(titulo: "Hortas Urbanas e Permacultura", subtitulo: "Curso Prático", descricaoCurta: "Guia completo de plantio em pequenos espaços.", icone: "leaf.fill", cor: .corFolhaClara, categoria: "Curso", nivel: "Iniciante"),
-            ConteudoEducacional(titulo: "Reciclagem e Economia Circular", subtitulo: "Curso Completo", descricaoCurta: "Técnicas e a economia circular.", icone: "arrow.triangle.2.circlepath", cor: .blue, categoria: "Curso", nivel: "Avançado"),
-            ConteudoEducacional(titulo: "Energias Renováveis do Futuro", subtitulo: "Curso Técnico", descricaoCurta: "Explore a energia solar, eólica e outras fontes limpas.", icone: "wind", cor: .cyan, categoria: "Curso", nivel: "Avançado"),
-            ConteudoEducacional(titulo: "O Saneamento Básico", subtitulo: "Saúde e Meio Ambiente", descricaoCurta: "Entenda a importância do saneamento para a saúde pública.", icone: "drop.fill", cor: .cyan, categoria: "Curso", nivel: "Intermediário"),
-            ConteudoEducacional(titulo: "Descarte de Lixo Eletrônico", subtitulo: "Lixo Eletrônico", descricaoCurta: "O que fazer com celulares, pilhas e computadores antigos.", icone: "iphone.gen1.slash", cor: .blue, categoria: "Curso", nivel: "Intermediário"),
-            ConteudoEducacional(titulo: "A Ameaça dos Oceanos", subtitulo: "Ecossistemas Marinhos", descricaoCurta: "Como o lixo plástico impacta a vida marinha.", icone: "trash.circle.fill", cor: .teal, categoria: "Curso", nivel: "Avançado"),
-            ConteudoEducacional(titulo: "A Revolução da Energia Solar", subtitulo: "Energias Renováveis", descricaoCurta: "Como a energia solar está moldando o futuro.", icone: "sun.max.trianglebadge.exclamationmark.fill", cor: .orange, categoria: "Curso", nivel: "Iniciante"),
-            ConteudoEducacional(titulo: "O Problema do Isopor", subtitulo: "Descarte Correto", descricaoCurta: "Aprenda a descartar e reciclar o isopor corretamente.", icone: "archivebox.fill", cor: .gray, categoria: "Curso", nivel: "Iniciante"),
-            ConteudoEducacional(titulo: "Guia de Compostagem Caseira", subtitulo: "E-book Gratuito", descricaoCurta: "Transforme resíduos orgânicos em adubo.", icone: "book.closed.fill", cor: Color(red: 0.2, green: 0.15, blue: 0.05), categoria: "Ebook", nivel: "Iniciante", link: "https://www.infoteca.cnptia.embrapa.br/infoteca/bitstream/doc/1019253/1/cartilhacompostagem.pdf"),
-            ConteudoEducacional(titulo: "Manual Completo do Lixo Zero", subtitulo: "E-book Completo", descricaoCurta: "Princípios para reduzir sua geração de lixo.", icone: "trash.slash.fill", cor: .gray, categoria: "Ebook", nivel: "Avançado"),
-            ConteudoEducacional(titulo: "5 Atitudes para um Planeta Mais Saudável", subtitulo: "Artigo da Comunidade", descricaoCurta: "Pequenas mudanças que fazem a diferença.", icone: "newspaper.fill", cor: .purple, categoria: "Artigo", nivel: "Todos", autor: "Equipe Leafy", textoCompleto: "Pequenas mudanças de hábito podem ter um impacto global..."),
-            ConteudoEducacional(titulo: "A Importância Vital das Abelhas", subtitulo: "Artigo Científico", descricaoCurta: "O papel vital dos polinizadores.", icone: "ant.fill", cor: .red, categoria: "Artigo", nivel: "Intermediário", autor: "Dr. Silva", textoCompleto: "As abelhas são responsáveis por mais de 70% da polinização..."),
-            ConteudoEducacional(titulo: "Como Montar sua Horta Vertical", subtitulo: "Vídeo Tutorial", descricaoCurta: "Horta em apartamentos.", icone: "video.fill", cor: .teal, categoria: "Video", nivel: "Iniciante", duracao: "12 min"),
-            ConteudoEducacional(titulo: "Documentário: Oceanos de Plástico", subtitulo: "Documentário Impactante", descricaoCurta: "A poluição marinha.", icone: "film.fill", cor: .blue, categoria: "Video", nivel: "Todos", duracao: "45 min")
+            // E-books
+            ConteudoEducacional(titulo: "Guia de Compostagem Caseira", subtitulo: "E-book Interativo", descricaoCurta: "Transforme resíduos orgânicos em adubo.", icone: "book.closed.fill", cor: Color(red: 0.2, green: 0.15, blue: 0.05), categoria: "Ebook", nivel: "Iniciante", textoCompleto: "Capítulo 1: O que é Compostagem?\n\nCompostagem é um processo biológico que transforma lixo orgânico (restos de frutas, vegetais, borra de café) em um adubo rico chamado composto. É a forma mais natural de reciclagem.\n\nCapítulo 2: Minhocário vs. Compostagem Seca\nExistem dois tipos principais de composteiras caseiras: as com minhocas (vermicompostagem) e as secas (que usam apenas microorganismos). Vamos analisar os prós e contras de cada uma para um apartamento."),
+            ConteudoEducacional(titulo: "Manual Completo do Lixo Zero", subtitulo: "PDF Externo", descricaoCurta: "Princípios para reduzir sua geração de lixo.", icone: "trash.slash.fill", cor: .gray, categoria: "Ebook", nivel: "Avançado", link: "https://www.infoteca.cnptia.embrapa.br/infoteca/bitstream/doc/1019253/1/cartilhacompostagem.pdf"), // Link de exemplo real
+            
+            // Artigos
+            ConteudoEducacional(titulo: "5 Atitudes para um Planeta Mais Saudável", subtitulo: "Artigo da Comunidade", descricaoCurta: "Pequenas mudanças que fazem a diferença.", icone: "newspaper.fill", cor: .purple, categoria: "Artigo", nivel: "Todos", autor: "Equipe Leafy", textoCompleto: "Muitas vezes pensamos que para ajudar o planeta precisamos de ações grandiosas. Mas a verdade é que o impacto real vem da consistência.\n\n1. Use uma ecobag. Sempre.\n2. Tenha um copo reutilizável na sua mochila ou carro.\n3. Tente a 'Segunda Sem Carne'.\n4. Troque suas lâmpadas por LED.\n5. Desligue aparelhos da tomada em vez de deixá-los em standby."),
+            ConteudoEducacional(titulo: "A Importância Vital das Abelhas", subtitulo: "Artigo Científico", descricaoCurta: "O papel vital dos polinizadores.", icone: "ant.fill", cor: .red, categoria: "Artigo", nivel: "Intermediário", autor: "Dr. Silva", textoCompleto: "As abelhas são indiscutivelmente os polinizadores mais importantes do planeta. Cerca de 70% das culturas agrícolas que alimentam o mundo dependem delas. O desaparecimento das abelhas (CCD - Colony Collapse Disorder) é uma ameaça real à nossa segurança alimentar. O uso de agrotóxicos e a perda de habitat são os principais vilões."),
+            
+            // Vídeos
+            ConteudoEducacional(titulo: "Como Montar sua Horta Vertical", subtitulo: "Vídeo Tutorial", descricaoCurta: "Horta em apartamentos.", icone: "video.fill", cor: .teal, categoria: "Video", nivel: "Iniciante", duracao: "12 min", textoCompleto: "Aprenda a transformar aquela parede vazia em uma horta produtiva. Neste vídeo, mostramos como usar garrafas PET, canos de PVC ou pallets para criar uma estrutura vertical que otimiza o espaço e recebe luz solar. Perfeito para quem não tem quintal."),
+            ConteudoEducacional(titulo: "Documentário: Oceanos de Plástico", subtitulo: "Documentário Impactante", descricaoCurta: "A poluição marinha.", icone: "film.fill", cor: .blue, categoria: "Video", nivel: "Todos", duracao: "45 min", textoCompleto: "Uma jornada investigativa pelos cinco giros oceânicos do planeta. Veja imagens chocantes de como o plástico afeta a vida selvagem e descubra como cientistas e ativistas estão lutando contra essa maré de poluição. (Link externo para o documentário)."),
+            
+            // **** NOVO CONTEÚDO ADICIONADO ****
+            
+            // Cursos Novos
+            ConteudoEducacional(titulo: "Moda Sustentável (Slow Fashion)", subtitulo: "Curso Introdutório", descricaoCurta: "O impacto da indústria têxtil e alternativas.", icone: "tshirt.fill", cor: .pink, categoria: "Curso", nivel: "Iniciante", textoCompleto: "O Custo da Moda\n\nA indústria da moda é a segunda mais poluente do mundo, atrás apenas da de petróleo. O 'Fast Fashion' nos ensinou a comprar, usar pouco e descartar. Isso gera um volume absurdo de lixo têxtil, que não é biodegradável, além de consumir trilhões de litros de água.\n\nO 'Slow Fashion' é um movimento contrário. Ele preza por:\n* Peças duráveis e de qualidade.\n* Produção local e justa.\n* Uso de tecidos ecológicos (algodão orgânico, linho, cânhamo).\n* Transparência na cadeia produtiva."),
+            ConteudoEducacional(titulo: "Finanças Verdes", subtitulo: "Curso Avançado", descricaoCurta: "Investindo em um futuro sustentável (ESG).", icone: "dollarsign.circle.fill", cor: .green, categoria: "Curso", nivel: "Avançado", textoCompleto: "O que é ESG?\n\nESG (Environmental, Social, and Governance) é uma sigla para Ambiental, Social e Governança. Ela se refere às boas práticas que uma empresa deve ter para ser considerada sustentável e responsável. Investidores do mundo todo estão usando critérios ESG para decidir onde aplicar seu dinheiro. Empresas que poluem, violam leis trabalhistas ou têm casos de corrupção estão perdendo valor de mercado."),
+            ConteudoEducacional(titulo: "Consumo Consciente de Água", subtitulo: "Curso Prático", descricaoCurta: "Técnicas para reduzir sua pegada hídrica.", icone: "humidity.fill", cor: .blue, categoria: "Curso", nivel: "Todos", textoCompleto: "Água: O Recurso Finito\n\nEmbora 70% do planeta seja água, apenas uma pequena fração é potável. Neste curso, vamos além do óbvio (fechar a torneira). Você aprenderá sobre a 'água virtual': a quantidade de água usada para produzir tudo o que consumimos, desde uma camiseta de algodão até 1kg de carne.\n\nAprenda técnicas práticas:\n* Instalação de arejadores nas torneiras.\n* Reuso de água da máquina de lavar para lavar o quintal.\n* Cálculo da sua pegada hídrica pessoal."),
+            
+            // Artigos Novos
+            ConteudoEducacional(titulo: "Microplásticos: O Inimigo Invisível", subtitulo: "Artigo de Alerta", descricaoCurta: "Como eles estão entrando na nossa cadeia alimentar.", icone: "testtube.2", cor: .red, categoria: "Artigo", nivel: "Intermediário", autor: "Dra. Ana Pereira", textoCompleto: "Você provavelmente está comendo plástico e não sabe. Microplásticos são partículas minúsculas (menores que 5mm) que vêm da degradação de lixos maiores ou de produtos como cosméticos e roupas sintéticas (poliéster).\n\nEles já foram encontrados no sal marinho, na água engarrafada, nos peixes e até no sangue humano. Os impactos na saúde a longo prazo ainda são incertos, mas alarmantes. Este artigo explora as fontes primárias e o que você pode fazer para reduzir sua exposição, como usar filtros de água e optar por roupas de fibras naturais."),
+            ConteudoEducacional(titulo: "O Poder da Energia Eólica", subtitulo: "Artigo Explicativo", descricaoCurta: "Como funcionam as turbinas eólicas.", icone: "wind", cor: .gray, categoria: "Artigo", nivel: "Iniciante", autor: "Equipe Leafy", textoCompleto: "Aquelas 'hélices gigantes' no horizonte são mais do que parecem. Elas são turbinas eólicas, uma das formas mais eficientes de gerar eletricidade limpa. O vento gira as pás, que acionam um gerador interno, produzindo energia sem queimar combustíveis fósseis.\n\nO Brasil tem um potencial eólico gigantesco, especialmente no Nordeste. Embora existam desafios, como o impacto visual e em aves, a tecnologia é fundamental para nossa matriz energética."),
+            ConteudoEducacional(titulo: "O que é 'Crédito de Carbono'?", subtitulo: "Artigo Financeiro", descricaoCurta: "Explicando o mercado de carbono de forma simples.", icone: "tree.fill", cor: .green, categoria: "Artigo", nivel: "Avançado", autor: "Carlos Mendes", textoCompleto: "Crédito de carbono é um certificado digital que comprova que uma empresa ou projeto evitou a emissão de 1 tonelada de CO2 (dióxido de carbono) na atmosfera. \n\nFunciona assim: uma empresa que polui muito (ex: uma fábrica) precisa 'zerar' suas emissões. Ela pode investir em tecnologia limpa, ou pode comprar créditos de carbono de um projeto que *remove* carbono da atmosfera (ex: um reflorestamento na Amazônia). É um mercado complexo, mas vital para financiar a preservação ambiental."),
+            
+            // Vídeos Novos
+            ConteudoEducacional(titulo: "Receitas Sem Desperdício (Zero Waste)", subtitulo: "Vídeo Culinário", descricaoCurta: "Aprenda a usar cascas, talos e sementes.", icone: "carrot.fill", cor: .orange, categoria: "Video", nivel: "Iniciante", duracao: "15 min", textoCompleto: "Não jogue fora a casca da banana! Vamos transformá-la em 'carne' desfiada vegana. E o talo da couve? Vira um recheio delicioso! A semente da abóbora? Um snack crocante e nutritivo. Aprenda 3 receitas incríveis para aproveitar 100% dos alimentos."),
+            ConteudoEducacional(titulo: "Entrevista: O Futuro das Cidades", subtitulo: "Debate com Especialista", descricaoCurta: "Cidades mais verdes, transporte público e mais.", icone: "bus.fill", cor: .purple, categoria: "Video", nivel: "Intermediário", duracao: "30 min", textoCompleto: "Conversamos com o arquiteto e urbanista João Martins sobre o conceito de 'Cidades de 15 minutos'. Imagine poder resolver sua vida (trabalho, escola, compras, lazer) a 15 minutos de caminhada ou bicicleta da sua casa. Falamos sobre ciclovias, parques lineares e o fim da dependência do carro."),
+            ConteudoEducacional(titulo: "DIY: Sabão Ecológico com Óleo Usado", subtitulo: "Vídeo Tutorial", descricaoCurta: "Transforme óleo de cozinha em sabão.", icone: "bubbles.and.sparkles", cor: .yellow, categoria: "Video", nivel: "Iniciante", duracao: "8 min", textoCompleto: "Nunca mais jogue óleo de cozinha no ralo! 1 litro de óleo pode contaminar 25 mil litros de água. Neste tutorial rápido, mostramos a receita segura (usando soda cáustica com proteção!) para transformar esse resíduo em barras de sabão de limpeza de alta qualidade."),
+            
+            // Ebook Novo
+            ConteudoEducacional(titulo: "Guia do Pequeno Ativista", subtitulo: "E-book Interativo", descricaoCurta: "Como fazer a diferença na sua escola ou bairro.", icone: "figure.stand", cor: .blue, categoria: "Ebook", nivel: "Todos", textoCompleto: "Sua Voz Importa\n\nNão é preciso ser adulto para mudar o mundo. Se você está preocupado com o futuro do planeta, este guia é para você.\n\nCapítulo 1: Comece Pequeno.\nComo organizar um dia de limpeza na praça do seu bairro ou uma coleta de lixo eletrônico na sua escola.\n\nCapítulo 2: Use a Internet.\nComo criar uma petição online (abaixo-assinado) para pedir ciclovias na sua cidade ou lixeiras de reciclagem no seu condomínio.")
         ]
 
+        loadProfileFromLocalCache()
         setupAuthListener()
         listenToChatMessages()
     }
+    
+    // MARK: - Persistência Local (Cache)
+    private func saveProfileToLocalCache(_ profile: UserProfile) {
+        if let data = try? JSONEncoder().encode(profile) {
+            UserDefaults.standard.set(data, forKey: userProfileCacheKey)
+        }
+    }
 
+    private func loadProfileFromLocalCache() {
+        if let data = UserDefaults.standard.data(forKey: userProfileCacheKey),
+           let profile = try? JSONDecoder().decode(UserProfile.self, from: data) {
+            self.userProfile = profile
+            self.userName = profile.name
+            
+            // Carrega o progresso salvo localmente
+            if let completedIDs = profile.completedContent {
+                self.conteudosCompletos = Set(completedIDs.compactMap { UUID(uuidString: $0) })
+            }
+        }
+    }
+
+    private func clearLocalCache() {
+        UserDefaults.standard.removeObject(forKey: userProfileCacheKey)
+    }
+
+    // MARK: - Firebase Auth & Firestore
     private func setupAuthListener() {
         if let handle = authStateHandle {
             Auth.auth().removeStateDidChangeListener(handle)
@@ -139,6 +171,7 @@ class AppDataStore: ObservableObject {
                 self.listenToUserProfile(userID: user.uid)
             } else {
                 self.stopListening()
+                self.clearLocalCache()
                 DispatchQueue.main.async {
                     self.userProfile = nil
                     self.userName = "Visitante"
@@ -158,19 +191,11 @@ class AppDataStore: ObservableObject {
 
                 if let error = error {
                     print("🔴 ERRO no listener do perfil: \(error.localizedDescription)")
-                    DispatchQueue.main.async {
-                        self.userProfile = nil
-                        self.userName = "Erro ao Carregar"
-                    }
                     return
                 }
 
                 guard let document = documentSnapshot, document.exists else {
-                    print("⚠️ AVISO: Documento do perfil NÃO encontrado para o usuário \(userID).")
-                    DispatchQueue.main.async {
-                        self.userProfile = nil
-                        self.userName = "Perfil Não Encontrado"
-                    }
+                    print("⚠️ AVISO: Documento do perfil NÃO encontrado.")
                     return
                 }
 
@@ -179,13 +204,19 @@ class AppDataStore: ObservableObject {
                 let profileImageURL = data?["profileImageURL"] as? String
                 let bio = data?["bio"] as? String ?? ""
                 let points = data?["points"] as? Int ?? 0
+                
+                // Carrega o progresso salvo do Firebase
+                let completedIDs = data?["completedContent"] as? [String] ?? []
 
-                let profile = UserProfile(id: document.documentID, name: name, profileImageURL: profileImageURL, bio: bio, points: points)
+                let profile = UserProfile(id: document.documentID, name: name, profileImageURL: profileImageURL, bio: bio, points: points, completedContent: completedIDs)
 
                 DispatchQueue.main.async {
                     self.userProfile = profile
                     self.userName = profile.name
-                    print("✅✅ Perfil CARREGADO/ATUALIZADO: \(profile.name), Pontos: \(profile.points)")
+                    self.saveProfileToLocalCache(profile)
+                    
+                    // Popula o set local com os dados do Firebase
+                    self.conteudosCompletos = Set(completedIDs.compactMap { UUID(uuidString: $0) })
 
                     if profile.profileImageURL == nil {
                         self.userProfileImage = nil
@@ -201,10 +232,7 @@ class AppDataStore: ObservableObject {
             .limit(toLast: 50)
             .addSnapshotListener { [weak self] querySnapshot, error in
                 guard let self = self else { return }
-                guard let documents = querySnapshot?.documents else {
-                    print("Erro ao buscar mensagens: \(error?.localizedDescription ?? "Erro desconhecido")")
-                    return
-                }
+                guard let documents = querySnapshot?.documents else { return }
 
                 let newMessages = documents.compactMap { document -> ChatMessage? in
                     let data = document.data()
@@ -212,12 +240,13 @@ class AppDataStore: ObservableObject {
                     let text = data["text"] as? String ?? ""
                     let userName = data["userName"] as? String ?? "Anônimo"
                     let userID = data["userID"] as? String ?? ""
+                    let userPhotoURL = data["userPhotoURL"] as? String
                     let timestamp = data["timestamp"] as? Timestamp
 
                     guard let date = timestamp?.dateValue() else { return nil }
                     let isCurrentUser = (userID == Auth.auth().currentUser?.uid)
 
-                    return ChatMessage(id: id, text: text, user: userName, isCurrentUser: isCurrentUser, timestamp: date)
+                    return ChatMessage(id: id, text: text, user: userName, userID: userID, userPhotoURL: userPhotoURL, isCurrentUser: isCurrentUser, timestamp: date)
                 }
                 DispatchQueue.main.async {
                     self.chatMessages = newMessages
@@ -236,6 +265,7 @@ class AppDataStore: ObservableObject {
             "text": text,
             "userName": currentUserName,
             "userID": userID,
+            "userPhotoURL": self.userProfile?.profileImageURL ?? "",
             "timestamp": Timestamp(date: Date())
         ]
 
@@ -245,16 +275,22 @@ class AppDataStore: ObservableObject {
     }
 
     func createUserProfile(userID: String, name: String) {
+        let profile = UserProfile(id: userID, name: name, profileImageURL: nil, bio: "", points: 0, completedContent: [])
+        
         let profileData: [String: Any] = [
             "name": name,
             "profileImageURL": NSNull(),
             "bio": "",
-            "points": 0
+            "points": 0,
+            "completedContent": [] // <-- Novo campo
         ]
 
         db.collection("users").document(userID).setData(profileData) { error in
-            if let error = error { print("Erro ao criar perfil inicial: \(error)") }
-            else { print("Perfil inicial criado para o usuário \(userID)") }
+            if let error = error {
+                print("Erro ao criar perfil inicial: \(error)")
+            } else {
+                self.saveProfileToLocalCache(profile)
+            }
         }
     }
 
@@ -262,52 +298,40 @@ class AppDataStore: ObservableObject {
         guard let userID = Auth.auth().currentUser?.uid, var currentProfile = self.userProfile else { return }
         let newPoints = currentProfile.points + amount
 
+        currentProfile.points = newPoints
+        self.userProfile = currentProfile
+        self.saveProfileToLocalCache(currentProfile)
+
         db.collection("users").document(userID).updateData(["points": newPoints]) { error in
             if let error = error {
-                print("Erro ao atualizar pontos: \(error.localizedDescription)")
-            } else {
-                print("Pontos atualizados no Firestore.")
-                DispatchQueue.main.async {
-                    self.userProfile?.points = newPoints
-                }
+                print("Erro ao atualizar pontos no servidor: \(error.localizedDescription)")
             }
         }
     }
 
     func updateUserName(newName: String) {
-        guard let userID = Auth.auth().currentUser?.uid else { return }
-        guard self.userProfile != nil else { return }
-        db.collection("users").document(userID).updateData(["name": newName]) { error in
-            if let error = error { print("Erro ao atualizar nome no Firestore: \(error)") }
-            else {
-                print("Nome atualizado com sucesso no Firestore")
-                DispatchQueue.main.async {
-                    self.userProfile?.name = newName
-                    self.userName = newName
-                }
-            }
-        }
+        guard let userID = Auth.auth().currentUser?.uid, var currentProfile = self.userProfile else { return }
+        
+        currentProfile.name = newName
+        self.userProfile = currentProfile
+        self.userName = newName
+        self.saveProfileToLocalCache(currentProfile)
+        
+        db.collection("users").document(userID).updateData(["name": newName])
+        
         let changeRequest = Auth.auth().currentUser?.createProfileChangeRequest()
         changeRequest?.displayName = newName
-        changeRequest?.commitChanges { error in
-            if let error = error { print("Erro ao atualizar DisplayName no Auth: \(error)") }
-            else { print("DisplayName atualizado com sucesso no Auth") }
-        }
+        changeRequest?.commitChanges(completion: nil)
     }
 
     func updateUserBio(newBio: String) {
-        guard let userID = Auth.auth().currentUser?.uid else { return }
-        guard self.userProfile != nil else { return }
-        db.collection("users").document(userID).updateData(["bio": newBio]) { error in
-              if let error = error {
-                  print("Erro ao atualizar bio no Firestore: \(error)")
-              } else {
-                  print("Bio atualizada com sucesso no Firestore")
-                  DispatchQueue.main.async {
-                      self.userProfile?.bio = newBio
-                  }
-              }
-          }
+        guard let userID = Auth.auth().currentUser?.uid, var currentProfile = self.userProfile else { return }
+        
+        currentProfile.bio = newBio
+        self.userProfile = currentProfile
+        self.saveProfileToLocalCache(currentProfile)
+        
+        db.collection("users").document(userID).updateData(["bio": newBio])
     }
 
     func sendPasswordReset(email: String) async throws {
@@ -315,13 +339,7 @@ class AppDataStore: ObservableObject {
         guard !trimmedEmail.isEmpty, trimmedEmail.contains("@") else {
             throw NSError(domain: "AuthError", code: 0, userInfo: [NSLocalizedDescriptionKey: "Por favor, insira um e-mail válido."])
         }
-        do {
-            try await Auth.auth().sendPasswordReset(withEmail: trimmedEmail)
-            print("E-mail de redefinição enviado para \(trimmedEmail)")
-        } catch {
-            print("Erro ao enviar e-mail de redefinição: \(error.localizedDescription)")
-            throw error
-        }
+        try await Auth.auth().sendPasswordReset(withEmail: trimmedEmail)
     }
 
     func updateProfileImage(imageData: Data) {
@@ -333,27 +351,21 @@ class AppDataStore: ObservableObject {
 
         storageRef.putData(imageData, metadata: metadata) { [weak self] metadata, error in
             guard let self = self else { return }
-            guard metadata != nil else {
-                print("Erro ao fazer upload da imagem: \(error?.localizedDescription ?? "Erro")")
-                return
-            }
+            guard metadata != nil else { return }
 
             storageRef.downloadURL { url, error in
-                guard let downloadURL = url else {
-                    print("Erro ao obter URL de download: \(error?.localizedDescription ?? "Erro")")
-                    return
-                }
+                guard let downloadURL = url else { return }
+                let urlString = downloadURL.absoluteString
 
-                self.db.collection("users").document(userID).updateData(["profileImageURL": downloadURL.absoluteString]) { error in
-                    if let error = error {
-                        print("Erro ao salvar URL da imagem no Firestore: \(error)")
-                    } else {
-                        print("URL da imagem atualizada com sucesso no Firestore")
-                        DispatchQueue.main.async {
-                            self.userProfile?.profileImageURL = downloadURL.absoluteString
-                            self.userProfileImage = nil
-                        }
+                self.db.collection("users").document(userID).updateData(["profileImageURL": urlString])
+                
+                DispatchQueue.main.async {
+                    if var currentProfile = self.userProfile {
+                        currentProfile.profileImageURL = urlString
+                        self.userProfile = currentProfile
+                        self.saveProfileToLocalCache(currentProfile)
                     }
+                    self.userProfileImage = nil
                 }
             }
         }
@@ -366,22 +378,43 @@ class AppDataStore: ObservableObject {
         userProfileListenerRegistration = nil
     }
 
+    // **** FUNÇÃO DE COMPLETAR MODIFICADA (4/4) ****
     func toggleCompletion(for item: ConteudoEducacional) {
+        guard let userID = Auth.auth().currentUser?.uid else { return }
+        
+        // 1. Atualiza o set local (otimista)
         DispatchQueue.main.async {
             if self.conteudosCompletos.contains(item.id) {
                 self.conteudosCompletos.remove(item.id)
             } else {
                 self.conteudosCompletos.insert(item.id)
             }
+            
+            // 2. Prepara os dados para o Firebase
+            let completedIDsAsString = self.conteudosCompletos.map { $0.uuidString }
+            
+            // 3. Atualiza o cache local
+            if var profile = self.userProfile {
+                profile.completedContent = completedIDsAsString
+                self.saveProfileToLocalCache(profile)
+            }
+            
+            // 4. Salva no Firebase
+            self.db.collection("users").document(userID).updateData(["completedContent": completedIDsAsString]) { error in
+                if let error = error {
+                    print("Erro ao salvar progresso: \(error.localizedDescription)")
+                    // Aqui você poderia reverter a mudança local se falhasse
+                } else {
+                    print("Progresso salvo no Firebase!")
+                }
+            }
         }
     }
 
      deinit {
-         print("AppDataStore deinit: Removing listeners.")
          stopListening()
          if let handle = authStateHandle {
              Auth.auth().removeStateDidChangeListener(handle)
-             print("AppDataStore Auth Listener removed.")
          }
      }
 }
@@ -409,24 +442,93 @@ extension View {
 struct ChatBubble: View {
     let message: ChatMessage
     var body: some View {
-        HStack {
+        HStack(alignment: .bottom, spacing: 8) {
             if message.isCurrentUser {
                 Spacer()
-                VStack(alignment: .trailing) {
-                    Text(message.text).padding(10).background(Color.corFolhaClara).foregroundColor(.white).cornerRadius(15, corners: [.topLeft, .bottomLeft, .bottomRight])
-                    Text(message.timestamp, style: .time).font(.caption2).foregroundColor(.gray)
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(message.text)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color.corFolhaClara)
+                        .foregroundColor(.white)
+                        .clipShape(RoundedCorner(radius: 20, corners: [.topLeft, .topRight, .bottomLeft]))
+                    
+                    Text(message.timestamp, style: .time)
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                        .padding(.trailing, 4)
                 }
             } else {
-                VStack(alignment: .leading) {
-                    Text(message.user).font(.caption).foregroundColor(.gray)
-                    Text(message.text).padding(10).background(Color(.systemGray5)).foregroundColor(.primary).cornerRadius(15, corners: [.topRight, .bottomLeft, .bottomRight])
-                    Text(message.timestamp, style: .time).font(.caption2).foregroundColor(.gray)
+                AvatarView(name: message.user, photoURL: message.userPhotoURL)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        Text(message.user)
+                            .font(.caption.weight(.bold))
+                            .foregroundColor(.secondary)
+                        Spacer()
+                    }
+                    
+                    Text(message.text)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
+                        .background(Color(.systemGray5))
+                        .foregroundColor(.primary)
+                        .clipShape(RoundedCorner(radius: 20, corners: [.topLeft, .topRight, .bottomRight]))
+
+                    Text(message.timestamp, style: .time)
+                        .font(.caption2)
+                        .foregroundColor(.gray)
+                        .padding(.leading, 4)
                 }
                 Spacer()
             }
         }
     }
 }
+
+struct AvatarView: View {
+    let name: String
+    let photoURL: String?
+
+    var initial: String {
+        String(name.prefix(1)).uppercased()
+    }
+    var avatarColor: Color {
+        let colors: [Color] = [.red, .blue, .green, .orange, .purple, .pink, .teal]
+        let hash = name.hashValue
+        let index = abs(hash) % colors.count
+        return colors[index].opacity(0.7)
+    }
+
+    var body: some View {
+        if let urlString = photoURL, !urlString.isEmpty, let url = URL(string: urlString) {
+            AsyncImage(url: url) { phase in
+                if let image = phase.image {
+                    image.resizable().scaledToFill()
+                } else {
+                    fallbackAvatar
+                }
+            }
+            .frame(width: 35, height: 35)
+            .clipShape(Circle())
+        } else {
+            fallbackAvatar
+        }
+    }
+    
+    var fallbackAvatar: some View {
+        ZStack {
+            Circle()
+                .fill(avatarColor)
+                .frame(width: 35, height: 35)
+            Text(initial)
+                .font(.caption.weight(.bold))
+                .foregroundColor(.white)
+        }
+    }
+}
+
 extension View {
     func cornerRadius(_ radius: CGFloat, corners: UIRectCorner) -> some View {
         clipShape( RoundedCorner(radius: radius, corners: corners) )
@@ -436,19 +538,24 @@ struct RoundedCorner: Shape {
     var radius: CGFloat = .infinity, corners: UIRectCorner = .allCorners
     func path(in rect: CGRect) -> Path { Path(UIBezierPath(roundedRect: rect, byRoundingCorners: corners, cornerRadii: CGSize(width: radius, height: radius)).cgPath) }
 }
+
 struct ComunidadeChatView: View {
     @EnvironmentObject var appDataStore: AppDataStore
+    @Environment(\.colorScheme) var colorScheme
     @State private var newMessageText: String = ""
 
     var body: some View {
-        VStack {
+        let theme = AppTheme(colorScheme: colorScheme)
+        VStack(spacing: 0) {
             ScrollViewReader { scrollViewProxy in
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
+                    LazyVStack(alignment: .leading, spacing: 16) {
                         ForEach(appDataStore.chatMessages) { message in
                             ChatBubble(message: message).id(message.id)
                         }
-                    }.padding()
+                    }
+                    .padding(.horizontal)
+                    .padding(.top, 10)
                 }
                 .onChange(of: appDataStore.chatMessages) { _, newValue in
                     if let lastMessage = newValue.last {
@@ -462,14 +569,32 @@ struct ComunidadeChatView: View {
                 }
             }
 
-            HStack {
-                TextField("Digite sua mensagem...", text: $newMessageText).padding(10).background(Color(.systemGray6)).cornerRadius(10)
-                Button(action: sendMessage) {
-                    Image(systemName: "arrow.up.circle.fill").font(.largeTitle).foregroundColor(.corFolhaClara)
-                }.disabled(newMessageText.isEmpty)
-            }.padding()
+            VStack(spacing: 0) {
+                Divider()
+                HStack(spacing: 10) {
+                    TextField("Digite sua mensagem...", text: $newMessageText)
+                        .padding(12)
+                        .background(theme.fundoCampoInput)
+                        .cornerRadius(25)
+                    
+                    Button(action: sendMessage) {
+                        Image(systemName: "paperplane.fill")
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundColor(.white)
+                            .padding(12)
+                            .background(Color.corFolhaClara)
+                            .clipShape(Circle())
+                    }
+                    .disabled(newMessageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .opacity(newMessageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.6 : 1.0)
+                }
+                .padding(.horizontal)
+                .padding(.vertical, 10)
+                .background(theme.fundoCard)
+            }
         }
         .navigationTitle("Comunidade")
+        .background(theme.fundo.ignoresSafeArea())
     }
 
     func sendMessage() {
@@ -484,8 +609,6 @@ struct MainView: View {
     let logoutAction: () -> Void
     var body: some View {
         TabView {
-            // A ABA "JOGAR" FOI REMOVIDA DAQUI
-            
             NavigationView { CursosView(logoutAction: logoutAction) }
                 .tabItem { Label("Cursos", systemImage: "book.fill") }
 
@@ -555,14 +678,26 @@ struct ModuleView: View {
                 VStack(alignment: .leading, spacing: 20) {
                     Text("Aula 1: Introdução").font(.title2.weight(.bold))
                     RoundedRectangle(cornerRadius: 15).fill(Color.gray.opacity(0.2)).aspectRatio(16/9, contentMode: .fit).overlay(Image(systemName: "play.circle.fill").font(.largeTitle).foregroundColor(.gray))
-                    Text("Este módulo introdutório explora os conceitos fundamentais de \(item.titulo.lowercased()). Abordaremos os principais desafios e as soluções mais eficazes que você pode aplicar no seu dia a dia para promover um impacto positivo e duradouro no meio ambiente. O conteúdo foi desenhado para ser prático e de fácil comprehension.").lineSpacing(5)
+                    
+                    Text(.init(item.textoCompleto ?? "Conteúdo programático em desenvolvimento."))
+                        .font(.body)
+                        .lineSpacing(6)
+                    
                     Divider()
+                    
+                    // **** BOTÃO "REFAZER" MODIFICADO ****
                     Button(action: {
                         appDataStore.toggleCompletion(for: item)
                         dismiss()
                     }) {
-                        Label(isCompleto ? "Desmarcar Conclusão" : "Marcar como Concluído", systemImage: isCompleto ? "xmark.circle.fill" : "checkmark.circle.fill")
-                            .font(.headline.weight(.bold)).frame(maxWidth: .infinity).padding().background(isCompleto ? Color.gray : Color.corFolhaClara).foregroundColor(.white).cornerRadius(12)
+                        Label(isCompleto ? "Refazer Módulo" : "Marcar como Concluído",
+                              systemImage: isCompleto ? "arrow.counterclockwise.circle.fill" : "checkmark.circle.fill")
+                            .font(.headline.weight(.bold))
+                            .frame(maxWidth: .infinity)
+                            .padding()
+                            .background(isCompleto ? Color.corDestaque : Color.corFolhaClara) // <-- Cor modificada
+                            .foregroundColor(.white)
+                            .cornerRadius(12)
                     }
                 }.padding()
             }
@@ -630,10 +765,50 @@ struct SafariView: UIViewControllerRepresentable {
     }
     func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
 }
+
+struct InternalBookView: View {
+    let ebook: ConteudoEducacional
+    @Environment(\.dismiss) var dismiss
+    @Environment(\.colorScheme) var colorScheme
+    
+    var body: some View {
+        let theme = AppTheme(colorScheme: colorScheme)
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 15) {
+                    Text(ebook.titulo)
+                        .font(.largeTitle.weight(.bold))
+                        .foregroundColor(theme.corTerra)
+                        .padding(.bottom, 5)
+                    
+                    if let text = ebook.textoCompleto {
+                        Text(.init(text))
+                            .font(.body)
+                            .lineSpacing(6)
+                    } else {
+                        Text("Conteúdo não disponível.")
+                            .foregroundColor(.gray)
+                    }
+                }
+                .padding()
+            }
+            .background(theme.fundo.ignoresSafeArea())
+            .navigationTitle("Leitor Leafy")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Fechar") { dismiss() }
+                }
+            }
+        }
+    }
+}
+
 struct EbookReaderView: View {
     let ebook: ConteudoEducacional
     @Environment(\.colorScheme) var colorScheme
     @State private var showSafari = false
+    @State private var showInternalReader = false
 
     var body: some View {
         let theme = AppTheme(colorScheme: colorScheme)
@@ -653,7 +828,7 @@ struct EbookReaderView: View {
 
                 if let link = ebook.link, let url = URL(string: link) {
                     Button { showSafari = true } label: {
-                        Label("Ler E-book Agora", systemImage: "safari.fill")
+                        Label("Ler E-book Externo", systemImage: "safari.fill")
                             .font(.headline.weight(.bold))
                             .padding()
                             .frame(maxWidth: .infinity)
@@ -663,10 +838,23 @@ struct EbookReaderView: View {
                             .shadow(color: .corFolhaClara.opacity(0.4), radius: 5, y: 3)
                     }
                     .sheet(isPresented: $showSafari) {
-                        SafariView(url: url)
-                            .ignoresSafeArea()
+                        SafariView(url: url).ignoresSafeArea()
                     }
-                } else {
+                } else if ebook.textoCompleto != nil {
+                     Button { showInternalReader = true } label: {
+                         Label("Ler Agora", systemImage: "book.fill")
+                             .font(.headline.weight(.bold))
+                             .padding()
+                             .frame(maxWidth: .infinity)
+                             .background(Color.corFolhaClara)
+                             .foregroundColor(.white)
+                             .cornerRadius(12)
+                             .shadow(color: .corFolhaClara.opacity(0.4), radius: 5, y: 3)
+                     }
+                     .sheet(isPresented: $showInternalReader) {
+                         InternalBookView(ebook: ebook)
+                     }
+                 } else {
                     Text("Conteúdo em breve")
                         .font(.headline)
                         .foregroundColor(.gray)
@@ -714,7 +902,7 @@ struct ArtigoView: View {
 
                 Divider()
 
-                Text(artigo.textoCompleto ?? "Este artigo está sendo escrito e estará disponível em breve.")
+                Text(.init(artigo.textoCompleto ?? "Este artigo está sendo escrito e estará disponível em breve."))
                     .font(.body)
                     .lineSpacing(6)
                     .padding(.top, 10)
@@ -772,7 +960,7 @@ struct VideoView: View {
                     .font(.title2.weight(.bold))
                     .foregroundColor(theme.corTerra)
 
-                Text(video.descricaoCurta)
+                Text(.init(video.textoCompleto ?? video.descricaoCurta))
                     .font(.body)
                     .lineSpacing(5)
             }
@@ -906,6 +1094,9 @@ struct CursoCardView: View {
     let curso: ConteudoEducacional
     @State private var progress: Double
     @Environment(\.colorScheme) var colorScheme
+    
+    // **** NOVO: Acessa o AppDataStore ****
+    @EnvironmentObject var appDataStore: AppDataStore
 
     init(curso: ConteudoEducacional) {
         self.curso = curso
@@ -913,7 +1104,10 @@ struct CursoCardView: View {
     }
 
     var body: some View {
+        // **** NOVO: Verifica se o curso está completo ****
+        let isCompleto = appDataStore.conteudosCompletos.contains(curso.id)
         let theme = AppTheme(colorScheme: colorScheme)
+        
         HStack(spacing: 15) {
             Image(systemName: curso.icone)
                 .font(.system(size: 28))
@@ -944,22 +1138,184 @@ struct CursoCardView: View {
         .background(theme.fundoCard)
         .cornerRadius(15)
         .shadow(color: .black.opacity(0.08), radius: 5, x: 0, y: 2)
+        // **** NOVO: Aplica opacidade se estiver completo ****
+        .opacity(isCompleto ? 0.6 : 1.0)
     }
 }
+
+// MARK: - Novo Minigame (Quiz)
+
+struct QuizQuestion: Identifiable {
+    let id = UUID()
+    let questionText: String
+    let options: [String]
+    let correctAnswerIndex: Int
+}
+
+struct MinigameQuizView: View {
+    @Environment(\.dismiss) var dismiss
+    
+    // Lista de Perguntas
+    let questions: [QuizQuestion] = [
+        QuizQuestion(questionText: "Qual destes NÃO é um dos 3 R's clássicos da sustentabilidade?", options: ["Reduzir", "Reutilizar", "Reclamar", "Reciclar"], correctAnswerIndex: 2),
+        QuizQuestion(questionText: "Qual gás é o principal contribuinte para o efeito estufa?", options: ["Oxigênio", "Dióxido de Carbono (CO2)", "Nitrogênio", "Hélio"], correctAnswerIndex: 1),
+        QuizQuestion(questionText: "O que é 'compostagem'?", options: ["Um tipo de lixo tóxico", "Queimar lixo orgânico", "Processo de decomposição de matéria orgânica para criar adubo", "Um filtro de água"], correctAnswerIndex: 2),
+        QuizQuestion(questionText: "Qual a cor da lixeira para descarte de PLÁSTICO?", options: ["Azul", "Amarelo", "Verde", "Vermelho"], correctAnswerIndex: 3)
+    ]
+    
+    @State private var currentQuestionIndex = 0
+    @State private var selectedAnswerIndex: Int? = nil
+    @State private var score = 0
+    @State private var quizFinished = false
+    
+    // Closure para retornar a pontuação
+    var onQuizCompleted: (Int) -> Void
+    
+    var body: some View {
+        NavigationView {
+            VStack(spacing: 30) {
+                if quizFinished {
+                    // --- Tela de Pontuação ---
+                    VStack(spacing: 20) {
+                        Text("Desafio Concluído!")
+                            .font(.largeTitle.weight(.bold))
+                        
+                        Image(systemName: score > 2 ? "star.fill" : "star.slash.fill")
+                            .font(.system(size: 80))
+                            .foregroundColor(score > 2 ? .corDestaque : .gray)
+                        
+                        Text("Você acertou \(score) de \(questions.count)!")
+                            .font(.title2)
+                        
+                        Text("Você ganhou \(score * 10) pontos!")
+                            .font(.title3.weight(.semibold))
+                            .foregroundColor(.corFolhaClara)
+                        
+                        Button(action: {
+                            onQuizCompleted(score * 10) // Retorna os pontos (10 por acerto)
+                            dismiss()
+                        }) {
+                            Label("Coletar Pontos e Sair", systemImage: "arrow.down.circle.fill")
+                                .font(.headline.weight(.bold))
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.corFolhaClara)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                        }
+                        .padding(.horizontal, 40)
+                    }
+                    .padding()
+                    
+                } else {
+                    // --- Tela da Pergunta ---
+                    VStack(alignment: .leading, spacing: 20) {
+                        Text("Questão \(currentQuestionIndex + 1) de \(questions.count)")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Text(questions[currentQuestionIndex].questionText)
+                            .font(.title2.weight(.bold))
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.8)
+                        
+                        // Opções
+                        ForEach(0..<questions[currentQuestionIndex].options.count, id: \.self) { index in
+                            Button(action: {
+                                selectedAnswerIndex = index
+                            }) {
+                                HStack {
+                                    Image(systemName: selectedAnswerIndex == index ? "checkmark.circle.fill" : "circle")
+                                        .foregroundColor(selectedAnswerIndex == index ? .corFolhaClara : .gray)
+                                    Text(questions[currentQuestionIndex].options[index])
+                                        .foregroundColor(.primary)
+                                    Spacer()
+                                }
+                                .padding()
+                                .background(Color(.systemGray6))
+                                .cornerRadius(10)
+                            }
+                        }
+                        
+                        // Botão de Próximo/Finalizar
+                        Button(action: nextQuestion) {
+                            Text(currentQuestionIndex == questions.count - 1 ? "Finalizar" : "Próxima Pergunta")
+                                .font(.headline.weight(.bold))
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(selectedAnswerIndex == nil ? Color.gray.opacity(0.5) : Color.corDestaque)
+                                .foregroundColor(.white)
+                                .cornerRadius(12)
+                        }
+                        .disabled(selectedAnswerIndex == nil)
+                        .animation(.easeInOut, value: selectedAnswerIndex)
+                    }
+                    .padding()
+                }
+                Spacer()
+            }
+            .navigationTitle("Quiz Sustentável")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Sair") { dismiss() }
+                }
+            }
+        }
+    }
+    
+    func nextQuestion() {
+        // Checa a resposta
+        if selectedAnswerIndex == questions[currentQuestionIndex].correctAnswerIndex {
+            score += 1
+        }
+        
+        // Reseta a seleção
+        selectedAnswerIndex = nil
+        
+        // Avança
+        if currentQuestionIndex < questions.count - 1 {
+            currentQuestionIndex += 1
+        } else {
+            // Terminou o quiz
+            withAnimation {
+                quizFinished = true
+            }
+        }
+    }
+}
+
+
 struct CursosView: View {
     let logoutAction: () -> Void
     @EnvironmentObject var appDataStore: AppDataStore
     @Environment(\.colorScheme) var colorScheme
     @State private var showProfile = false
 
-    // MARK: - Propriedades do Minigame
+    // MARK: - Propriedades do Minigame (Quiz)
+    @State private var showMinigameQuiz = false
     @State private var showPointsFeedback = false
-    @State private var showMinigame = false // Controla o carregamento
-    // URL alterada para um jogo funcional de swipe (2048)
-    private let gameURL = URL(string: "https://play2048.co/")!
+    @State private var pontosGanhosSessao = 0
 
+    // **** NOVO: Lógica de Ordenação dos Cursos ****
     private var todosOsCursos: [ConteudoEducacional] {
-        appDataStore.conteudos.filter { $0.categoria == "Curso" && !$0.isMandatory }
+        let cursos = appDataStore.conteudos.filter { $0.categoria == "Curso" && !$0.isMandatory }
+        
+        // Ordena: incompletos primeiro, completos por último
+        return cursos.sorted { (curso1, curso2) -> Bool in
+            let completo1 = appDataStore.conteudosCompletos.contains(curso1.id)
+            let completo2 = appDataStore.conteudosCompletos.contains(curso2.id)
+            
+            if !completo1 && completo2 {
+                return true // curso1 (incompleto) vem antes de curso2 (completo)
+            } else if completo1 && !completo2 {
+                return false // curso1 (completo) vem depois de curso2 (incompleto)
+            } else {
+                // Se ambos forem completos ou ambos incompletos, usa a ordem original (pela forma como o filtro foi feito)
+                // Para manter uma ordem estável, poderíamos comparar títulos, mas não é necessário.
+                return false
+            }
+        }
     }
 
     var body: some View {
@@ -967,90 +1323,63 @@ struct CursosView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 30) {
                 
-                // MARK: - Minigame Integrado
+                // MARK: - Minigame (Quiz)
                 ZStack {
-                    // O contêiner do card do minigame
                     VStack(spacing: 20) {
+                        Image(systemName: "leaf.arrow.triangle.circlepath")
+                            .font(.system(size: 60))
+                            .foregroundColor(.corFolhaClara)
+                        Text("Desafio: Quiz Verde")
+                            .font(.title2.weight(.bold))
+                            .foregroundColor(theme.corTerra)
+                        Text("Responda \(MinigameQuizView(onQuizCompleted: {_ in}).questions.count) perguntas sobre sustentabilidade e ganhe pontos por seus acertos!")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
                         
-                        if showMinigame {
-                            // --- O Jogo (WebView) ---
-                            WebView(url: gameURL)
-                                .frame(height: 350) // ALTURA AUMENTADA
-                                .cornerRadius(12) // Arredondamento para o conteúdo da webview
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                                )
-                            // Padding horizontal removido para ir de ponta a ponta
-
-                            // --- Botão de Resgatar Pontos ---
-                            Button(action: {
-                                appDataStore.addPoints(10)
-                                withAnimation {
-                                    showPointsFeedback = true
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                    withAnimation {
-                                        showPointsFeedback = false
-                                    }
-                                }
-                            }) {
-                                Label("Resgatar 10 Pontos", systemImage: "plus.circle.fill")
-                                    .font(.headline.weight(.bold))
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                                    .background(Color.corDestaque)
-                                    .foregroundColor(.white)
-                                    .cornerRadius(12)
-                                    .shadow(color: .corDestaque.opacity(0.5), radius: 8, x: 0, y: 4)
-                            }
-                            .padding(.horizontal, 40) // Padding interno do botão
-                            
-                        } else {
-                            // --- Placeholder (Antes de carregar o jogo) ---
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(theme.fundoCard.opacity(0.5)) // Fundo do placeholder
-                                    .frame(height: 350) // ALTURA AUMENTADA
-
-                                VStack {
-                                    Image(systemName: "gamecontroller.fill")
-                                        .font(.largeTitle)
-                                        .foregroundColor(.secondary)
-                                    Text("Toque para Carregar o Minigame")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                        .padding(.top, 5)
-                                }
-                            }
-                            // Padding horizontal removido
-                            .onTapGesture {
-                                withAnimation {
-                                    showMinigame = true // Ativa o jogo ao tocar
-                                }
-                            }
+                        Button("Iniciar Desafio!") {
+                            showMinigameQuiz = true
                         }
+                        .font(.headline.weight(.bold))
+                        .padding(.horizontal, 30)
+                        .padding(.vertical, 12)
+                        .background(Color.corDestaque)
+                        .foregroundColor(.white)
+                        .cornerRadius(20)
                     }
-                    .padding(.vertical) // Padding vertical dentro do card
-                    .background(theme.fundoCard) // Fundo do card
-                    .cornerRadius(15) // Bordas arredondadas do card
-                    // Padding horizontal do card removido
+                    .padding(30)
+                    .frame(maxWidth: .infinity)
+                    .background(theme.fundoCard)
+                    .cornerRadius(20)
+                    .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                    .padding(.horizontal)
                     
-                    // Feedback de pontos (flutua sobre o ZStack)
+                    // Feedback de pontos (igual ao anterior)
                     if showPointsFeedback {
-                        Text("+10 Pontos!")
-                            .font(.largeTitle.weight(.bold))
-                            .foregroundColor(.white)
-                            .padding(20)
-                            .background(Color.corFolhaClara.opacity(0.8))
-                            .clipShape(Capsule())
-                            .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                            .zIndex(1)
+                        VStack(spacing: 10) {
+                            Text("Desafio Concluído!")
+                                .font(.title3.weight(.bold))
+                            Text("+\(pontosGanhosSessao) Pontos")
+                                .font(.largeTitle.weight(.heavy))
+                                .foregroundColor(.corDestaque)
+                        }
+                        .padding(30)
+                        .background(theme.fundoCard)
+                        .cornerRadius(20)
+                        .shadow(radius: 20)
+                        .transition(.scale.combined(with: .opacity))
+                        .zIndex(2)
                     }
                 }
-                .padding(.horizontal) // Adiciona padding horizontal ao ZStack para centralizá-lo
-                // MARK: - Fim do Minigame
+                .sheet(isPresented: $showMinigameQuiz) {
+                    MinigameQuizView { points in
+                        // Esta é a completion handler que é chamada ao fechar o quiz
+                        collectQuizPoints(points: points)
+                    }
+                }
 
+                // MARK: - Lista de Cursos (Agora ordenada)
                 if !todosOsCursos.isEmpty {
                     Text("Trilhas de Aprendizagem")
                         .font(.title2.weight(.bold))
@@ -1065,6 +1394,7 @@ struct CursosView: View {
                         }
                     }
                     .padding(.horizontal)
+                    .animation(.easeInOut, value: todosOsCursos) // Anima a reordenação
                 } else {
                     Text("Novos cursos em breve!")
                         .foregroundColor(.secondary)
@@ -1077,26 +1407,33 @@ struct CursosView: View {
         .buttonStyle(.plain)
         .background(theme.fundo.ignoresSafeArea())
         .navigationTitle("Cursos")
-        .toolbar { // A Toolbar com os pontos
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
-                HStack {
-                    Text("\(appDataStore.userProfile?.points ?? 0)")
-                        .font(.subheadline.weight(.bold))
-                    Image(systemName: "star.fill")
-                        .font(.caption.weight(.bold))
-                }
-                .foregroundColor(.corDestaque)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color.corDestaque.opacity(0.15))
-                .clipShape(Capsule())
-                
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: { showProfile = true }) {
                     Image(systemName: "person.circle.fill")
+                        .font(.title3)
                 }
             }
         }
         .sheet(isPresented: $showProfile) { ProfileView(logoutAction: logoutAction) }
+    }
+    
+    // Nova função para coletar pontos do Quiz
+    private func collectQuizPoints(points: Int) {
+        if points > 0 {
+            pontosGanhosSessao = points
+            appDataStore.addPoints(points)
+            
+            withAnimation {
+                showPointsFeedback = true
+            }
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation {
+                    showPointsFeedback = false
+                }
+            }
+        }
     }
 }
 struct ExplorarView: View {
@@ -1169,14 +1506,26 @@ struct ExplorarView: View {
     }
 }
 
-// MARK: - Minigame (com WebView)
+// MARK: - WebView (Para Ebooks/Safari)
 
+// **** CORREÇÃO MINIGAME TELA BRANCA (1/1) ****
+// Habilitamos o JavaScript para a WebView carregar o jogo.
 struct WebView: UIViewRepresentable {
     let url: URL
 
     func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
-        webView.scrollView.isScrollEnabled = false // Mantido para o 2048
+        // --- CORREÇÃO: Habilitar JavaScript ---
+        let preferences = WKPreferences()
+        preferences.javaScriptEnabled = true // <--- ISSO CORRIGE A TELA BRANCA
+        
+        let configuration = WKWebViewConfiguration()
+        configuration.preferences = preferences
+        
+        let webView = WKWebView(frame: .zero, configuration: configuration)
+        // --- Fim da Correção ---
+        
+        // Esta webview (Safari) deve permitir scroll
+        webView.scrollView.isScrollEnabled = true
         return webView
     }
 
@@ -1186,16 +1535,63 @@ struct WebView: UIViewRepresentable {
     }
 }
 
-// A struct MinigameView foi REMOVIDA
-// Seu conteúdo agora está dentro da CursosView
-
-
 // MARK: - Views de Perfil e Configurações
+
+// **** NOVA VIEW (1/2): Tela de Aparência ****
+struct AppearanceSettingsView: View {
+    @AppStorage("isDarkMode") private var isDarkMode = false
+    @AppStorage("appIconName") private var appIconName: String = "Padrão"
+    
+    var body: some View {
+        Form {
+            Section(header: Text("Tema"), footer: Text("O modo escuro ajuda a economizar bateria em telas OLED.")) {
+                Toggle("Modo Escuro", isOn: $isDarkMode)
+            }
+            
+            Section(header: Text("Ícone do App"), footer: Text("A mudança pode levar alguns segundos para ser aplicada.")) {
+                Picker("Ícone do App", selection: $appIconName) {
+                    Text("Padrão").tag("Padrão")
+                    Text("Claro").tag("iconClaro") // "iconClaro" deve bater com a chave no Info.plist
+                    Text("Escuro").tag("iconEscuro") // "iconEscuro" deve bater com a chave no Info.plist
+                }
+                .pickerStyle(SegmentedPickerStyle())
+                .onChange(of: appIconName) { _, newIcon in
+                    changeAppIcon(to: newIcon)
+                }
+            }
+        }
+        .navigationTitle("Aparência")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+    
+    // **** NOVA VIEW (2/2): Função de troca de ícone ****
+    private func changeAppIcon(to iconName: String) {
+        let iconToSet: String? = (iconName == "Padrão") ? nil : iconName
+        
+        guard UIApplication.shared.supportsAlternateIcons else {
+            print("App não suporta ícones alternativos.")
+            return
+        }
+
+        UIApplication.shared.setAlternateIconName(iconToSet) { error in
+            if let error = error {
+                print("Erro ao trocar o ícone: \(error.localizedDescription)")
+            } else {
+                print("Ícone do app trocado com sucesso para: \(iconName)")
+            }
+        }
+    }
+}
+
+
 struct ProfileView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var appDataStore: AppDataStore
     let logoutAction: () -> Void
     @Environment(\.colorScheme) var colorScheme
+    
+    // As @AppStorage foram movidas para 'AppearanceSettingsView'
+    
     @State private var selectedPhotoItem: PhotosPickerItem? = nil
 
     @State private var editingName: String = ""
@@ -1290,6 +1686,13 @@ struct ProfileView: View {
                             .foregroundColor(.corDestaque)
                             .fontWeight(.bold)
                      }
+                }
+                
+                // **** SEÇÃO DE APARÊNCIA MODIFICADA ****
+                Section(header: Text("Personalização")) {
+                    NavigationLink(destination: AppearanceSettingsView()) {
+                        Label("Aparência", systemImage: "paintbrush.fill")
+                    }
                 }
 
                 Section(header: Text("Sobre")) {
@@ -1394,6 +1797,9 @@ struct PrivacyPolicyView: View {
 // MARK: - Views de Autenticação e Onboarding
 
 struct SplashScreenView: View {
+    
+    @AppStorage("isDarkMode") private var isDarkMode = false
+    
     @State private var dropPosition: CGFloat = -UIScreen.main.bounds.midY
     @State private var dropScale: CGFloat = 1.0
     @State private var rippleScale: CGFloat = 0.0
@@ -1402,6 +1808,7 @@ struct SplashScreenView: View {
 
     @State private var exitLeafScale: CGFloat = 0.01
     @State private var exitLeafOpacity: Double = 0.0
+    
     var body: some View {
         ZStack {
             Color.white.edgesIgnoringSafeArea(.all)
@@ -1414,7 +1821,13 @@ struct SplashScreenView: View {
             }
             Circle().fill(Color.corFolhaClara).frame(width: 30, height: 30).scaleEffect(dropScale).offset(y: dropPosition)
 
-            Image(systemName: "leaf.fill").font(.system(size: 100)).foregroundColor(.white).scaleEffect(exitLeafScale).opacity(exitLeafOpacity)
+            Image(isDarkMode ? "logo_escuro" : "logo_claro")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 100)
+                .foregroundColor(.white)
+                .scaleEffect(exitLeafScale)
+                .opacity(exitLeafOpacity)
         }
         .onAppear(perform: startAnimationSequence)
     }
@@ -1511,6 +1924,8 @@ struct LoginView: View {
     @State private var showForgotPassword = false
 
     @State private var viewOpacity = 0.0
+    
+    @AppStorage("isDarkMode") private var isDarkMode = false
 
     private func attemptLogin() {
         let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -1541,8 +1956,11 @@ struct LoginView: View {
             theme.fundo.ignoresSafeArea()
             VStack {
                 Spacer()
-                Image(systemName: "leaf.fill")
-                    .font(.system(size: 80))
+                
+                Image(isDarkMode ? "logo_escuro" : "logo_claro")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 100, height: 100)
                     .foregroundColor(.corFolhaClara)
                     .padding(.bottom, 30)
 
@@ -1835,6 +2253,8 @@ struct ForgotPasswordView: View {
 
 struct ContentView: View {
     @EnvironmentObject var appDataStore: AppDataStore
+    
+    @AppStorage("isDarkMode") private var isDarkMode = false
 
     @State private var showSplash: Bool = true
     @State private var currentAuthScreen: AuthScreen = .login
@@ -1889,6 +2309,7 @@ struct ContentView: View {
                 }
             }
         }
+        .preferredColorScheme(isDarkMode ? .dark : .light)
     }
 
     private var allMandatoryCompleted: Bool {
@@ -2025,7 +2446,5 @@ struct ContentView_Previews: PreviewProvider {
         MandatoryModulesView(showNextStep: .constant(false))
             .environmentObject(AppDataStore())
             .previewDisplayName("Primeiros Passos")
-        
-        // A PREVIEW DA MINIGAMEVIEW FOI REMOVIDA
     }
 }

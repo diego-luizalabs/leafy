@@ -7,13 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		9E0248F52EB4CFE100D0E2FE /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9E0248F42EB4CFE100D0E2FE /* GoogleService-Info.plist */; };
 		9E850AEC2EC7735E00BE9E2E /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9E850AEB2EC7735E00BE9E2E /* Assets.xcassets */; };
 		9E850AEF2EC7877D00BE9E2E /* logo-escuro.png in Resources */ = {isa = PBXBuildFile; fileRef = 9E850AEE2EC7877D00BE9E2E /* logo-escuro.png */; };
 		9E850AF02EC7877D00BE9E2E /* logo-claro.png in Resources */ = {isa = PBXBuildFile; fileRef = 9E850AED2EC7877D00BE9E2E /* logo-claro.png */; };
 		9ECF54B42EB231920044A16C /* LeafyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECF54B02EB231910044A16C /* LeafyApp.swift */; };
 		9ECF54B52EB231920044A16C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9ECF54AD2EB231910044A16C /* ContentView.swift */; };
 		9ECF54B82EB234D70044A16C /* FirebaseStorage in Frameworks */ = {isa = PBXBuildFile; productRef = 9ECF54B72EB234D70044A16C /* FirebaseStorage */; };
+		9EE10AEC2EC8AD70005F9EB4 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 9EE10AEB2EC8AD70005F9EB4 /* GoogleSignIn */; };
+		9EE10AEE2EC8AD70005F9EB4 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 9EE10AED2EC8AD70005F9EB4 /* GoogleSignInSwift */; };
+		9EE10AF62EC8B6EA005F9EB4 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 9EE10AF52EC8B6EA005F9EB4 /* GoogleService-Info.plist */; };
 		9EFB3BE52EAA4EA600682170 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 9EFB3BE42EAA4EA600682170 /* FirebaseCore */; };
 		9EFB3BE72EAA4EB300682170 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 9EFB3BE62EAA4EB300682170 /* FirebaseAuth */; };
 		9EFB3BE92EAA4EB800682170 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 9EFB3BE82EAA4EB800682170 /* FirebaseFirestore */; };
@@ -21,7 +23,6 @@
 
 /* Begin PBXFileReference section */
 		0FA3081A21C4A2696AA000F9 /* Pods_Leafy.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Leafy.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		9E0248F42EB4CFE100D0E2FE /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		9E7472F12EA659B8002A7FBD /* Leafy.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Leafy.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9E850AEB2EC7735E00BE9E2E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		9E850AED2EC7877D00BE9E2E /* logo-claro.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "logo-claro.png"; sourceTree = "<group>"; };
@@ -30,6 +31,7 @@
 		9ECF54AD2EB231910044A16C /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9ECF54B02EB231910044A16C /* LeafyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeafyApp.swift; sourceTree = "<group>"; };
 		9ECF54BF2EB244EE0044A16C /* Leafy-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Leafy-Bridging-Header.h"; sourceTree = "<group>"; };
+		9EE10AF52EC8B6EA005F9EB4 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		9EFB3C2E2EAA719E00682170 /* Leafy.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; path = Leafy.xcodeproj; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -38,8 +40,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9EE10AEC2EC8AD70005F9EB4 /* GoogleSignIn in Frameworks */,
 				9EFB3BE52EAA4EA600682170 /* FirebaseCore in Frameworks */,
 				9ECF54B82EB234D70044A16C /* FirebaseStorage in Frameworks */,
+				9EE10AEE2EC8AD70005F9EB4 /* GoogleSignInSwift in Frameworks */,
 				9EFB3BE72EAA4EB300682170 /* FirebaseAuth in Frameworks */,
 				9EFB3BE92EAA4EB800682170 /* FirebaseFirestore in Frameworks */,
 			);
@@ -57,8 +61,8 @@
 				9E850AEB2EC7735E00BE9E2E /* Assets.xcassets */,
 				9ECF54BF2EB244EE0044A16C /* Leafy-Bridging-Header.h */,
 				9ECF54AD2EB231910044A16C /* ContentView.swift */,
-				9E0248F42EB4CFE100D0E2FE /* GoogleService-Info.plist */,
 				9ECF54B02EB231910044A16C /* LeafyApp.swift */,
+				9EE10AF52EC8B6EA005F9EB4 /* GoogleService-Info.plist */,
 				9EFB3BE32EAA4EA600682170 /* Frameworks */,
 				9E7472F22EA659B8002A7FBD /* Products */,
 			);
@@ -108,6 +112,8 @@
 				9EFB3BE62EAA4EB300682170 /* FirebaseAuth */,
 				9EFB3BE82EAA4EB800682170 /* FirebaseFirestore */,
 				9ECF54B72EB234D70044A16C /* FirebaseStorage */,
+				9EE10AEB2EC8AD70005F9EB4 /* GoogleSignIn */,
+				9EE10AED2EC8AD70005F9EB4 /* GoogleSignInSwift */,
 			);
 			productName = Leafy;
 			productReference = 9E7472F12EA659B8002A7FBD /* Leafy.app */;
@@ -143,6 +149,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				9EFB3BDA2EAA4CE900682170 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				9EE10AEA2EC8AD70005F9EB4 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 9E7472F22EA659B8002A7FBD /* Products */;
@@ -166,9 +173,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				9E850AEF2EC7877D00BE9E2E /* logo-escuro.png in Resources */,
+				9EE10AF62EC8B6EA005F9EB4 /* GoogleService-Info.plist in Resources */,
 				9E850AF02EC7877D00BE9E2E /* logo-claro.png in Resources */,
 				9E850AEC2EC7735E00BE9E2E /* Assets.xcassets in Resources */,
-				9E0248F52EB4CFE100D0E2FE /* GoogleService-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -318,10 +325,10 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Leafy-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -355,10 +362,10 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Leafy-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.education";
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIRequiredDeviceCapabilities = armv7;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -403,6 +410,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		9EE10AEA2EC8AD70005F9EB4 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
 		9EFB3BDA2EAA4CE900682170 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -418,6 +433,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 9EFB3BDA2EAA4CE900682170 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseStorage;
+		};
+		9EE10AEB2EC8AD70005F9EB4 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9EE10AEA2EC8AD70005F9EB4 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		9EE10AED2EC8AD70005F9EB4 /* GoogleSignInSwift */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 9EE10AEA2EC8AD70005F9EB4 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignInSwift;
 		};
 		9EFB3BE42EAA4EA600682170 /* FirebaseCore */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -11,6 +11,11 @@ import FirebaseStorage
 import PhotosUI
 import WebKit // Necessário para a WebView do Ebook/Safari
 
+// NOVO: IMPORTS PARA LOGIN SOCIAL
+import GoogleSignIn
+import GoogleSignInSwift
+// FIM DOS NOVOS IMPORTS
+
 // MARK: - Configurações e Modelos
 
 extension Color {
@@ -194,10 +199,19 @@ class AppDataStore: ObservableObject {
                     return
                 }
 
+                // NOVO: CHECK DE SEGURANÇA PARA LOGIN SOCIAL
                 guard let document = documentSnapshot, document.exists else {
                     print("⚠️ AVISO: Documento do perfil NÃO encontrado.")
+                    // Se o documento não existe (ex: login social novo)
+                    // e o usuário auth existe, podemos criar um perfil
+                    // Isso é um fallback caso o fluxo de login falhe em criar
+                    if let authUser = Auth.auth().currentUser, authUser.uid == userID {
+                        print("Documento não encontrado para usuário logado, criando perfil social (fallback)...")
+                        self.createProfileForSocialUser(authUser)
+                    }
                     return
                 }
+                // FIM DA ADIÇÃO
 
                 let data = document.data()
                 let name = data?["name"] as? String ?? "Nome Padrão"
@@ -341,6 +355,126 @@ class AppDataStore: ObservableObject {
         }
         try await Auth.auth().sendPasswordReset(withEmail: trimmedEmail)
     }
+
+    // MARK: - Social Login Helpers (NOVAS FUNÇÕES)
+    
+    // Helper para pegar a View Controller que está no topo (necessário para os pop-ups de login)
+    private func getTopViewController() -> UIViewController? {
+        // Pega a cena conectada
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController else {
+            print("🔴 ERRO: Não foi possível encontrar o rootViewController.")
+            return nil
+        }
+        
+        // Itera para encontrar o VC no topo
+        var topViewController = rootViewController
+        while let presentedViewController = topViewController.presentedViewController {
+            topViewController = presentedViewController
+        }
+        return topViewController
+    }
+    
+    // Função para criar perfil para usuário de login social (se for novo)
+    fileprivate func createProfileForSocialUser(_ user: User) {
+        let name = user.displayName ?? "Usuário"
+        let photoURL = user.photoURL?.absoluteString
+        
+        let profile = UserProfile(id: user.uid, name: name, profileImageURL: photoURL, bio: "", points: 0, completedContent: [])
+        
+        let profileData: [String: Any] = [
+            "name": name,
+            "profileImageURL": photoURL ?? NSNull(),
+            "bio": "",
+            "points": 0,
+            "completedContent": []
+        ]
+        
+        // Seta os dados no Firestore. O listener 'listenToUserProfile'
+        // será acionado automaticamente após isso.
+        // Usamos .setData com merge=true para criar ou atualizar sem sobrescrever
+        // campos existentes se o usuário já tiver dados parciais.
+        db.collection("users").document(user.uid).setData(profileData, merge: true) { error in
+            if let error = error {
+                print("🔴 ERRO ao criar/mesclar perfil social: \(error)")
+            } else {
+                print("✅ Perfil social criado/mesclado no Firestore para \(user.uid)")
+                self.saveProfileToLocalCache(profile)
+            }
+        }
+    }
+    
+    // MARK: - Funções de Login Social (Chamadas pela View) (CORRIGIDAS)
+
+    @MainActor
+    func signInWithGoogle() async {
+        print("Iniciando login com Google...")
+        
+        // 1. Pega a View Controller do topo
+        guard let topVC = getTopViewController() else {
+            print("🔴 ERRO: Não foi possível obter topVC para Google Sign-In.")
+            return
+        }
+
+        do {
+            // 2. Inicia o fluxo de login do Google
+            let gidUser = try await GIDSignIn.sharedInstance.signIn(withPresenting: topVC)
+            
+            guard let idToken = gidUser.user.idToken?.tokenString else {
+                print("🔴 ERRO: Token ID do Google não encontrado.")
+                return
+            }
+            
+            let accessToken = gidUser.user.accessToken.tokenString
+            
+            // 3. Cria a credencial do Firebase
+            let credential = GoogleAuthProvider.credential(withIDToken: idToken,
+                                                         accessToken: accessToken)
+            
+            // 4. Faz login no Firebase
+            let authResult = try await Auth.auth().signIn(with: credential)
+            print("✅ Login com Google (Firebase) OK. User: \(authResult.user.uid)")
+            
+            // 5. Se for um *novo* usuário, cria o perfil no Firestore
+            if authResult.additionalUserInfo?.isNewUser == true {
+                print("Detectado novo usuário do Google. Criando perfil...")
+                createProfileForSocialUser(authResult.user)
+            }
+            
+        } catch {
+            print("🔴 ERRO no signInWithGoogle: \(error.localizedDescription)")
+        }
+    }
+    
+    @MainActor
+        func signInWithGitHub() async {
+            print("Iniciando login com GitHub...")
+
+            let provider = OAuthProvider(providerID: "github.com")
+            
+            do {
+                // 1. Pega a credencial do GitHub (isso abrirá o SFSafariViewController)
+                // ---- CORREÇÃO APLICADA AQUI ----
+                // O método assíncrono correto é 'credential(with:)'
+                let credential = try await provider.credential(with: nil)
+                
+                // 2. Faz login no Firebase
+                // Esta é a linha que estava dando o erro (provavelmente a sua linha 459)
+                let authResult = try await Auth.auth().signIn(with: credential)
+                print("✅ Login com GitHub (Firebase) OK. User: \(authResult.user.uid)")
+                
+                // 3. Se for um *novo* usuário, cria o perfil no Firestore
+                if authResult.additionalUserInfo?.isNewUser == true {
+                    print("Detectado novo usuário do GitHub. Criando perfil...")
+                    createProfileForSocialUser(authResult.user)
+                }
+                
+            } catch {
+                print("🔴 ERRO no signInWithGitHub: \(error.localizedDescription)")
+            }
+        }
+    
+    // (FIM DAS NOVAS FUNÇÕES / CORREÇÕES)
 
     func updateProfileImage(imageData: Data) {
         guard let userID = Auth.auth().currentUser?.uid else { return }
@@ -1911,6 +2045,9 @@ struct MandatoryModulesView: View {
         }
     }
 }
+
+// MARK: - LOGIN VIEW ATUALIZADA (COM ÍCONES E CORREÇÕES)
+
 struct LoginView: View {
     @EnvironmentObject var appDataStore: AppDataStore
     @Binding var currentAuthScreen: AuthScreen
@@ -1922,8 +2059,10 @@ struct LoginView: View {
     @State private var alertMessage = ""
 
     @State private var showForgotPassword = false
-
     @State private var viewOpacity = 0.0
+    
+    // NOVO: Estado de carregamento para botões sociais
+    @State private var isSocialLoading = false
     
     @AppStorage("isDarkMode") private var isDarkMode = false
 
@@ -1933,6 +2072,10 @@ struct LoginView: View {
         guard !trimmedEmail.isEmpty, !trimmedPassword.isEmpty else {
             self.alertMessage = "Por favor, preencha o e-mail e a senha."; self.showAlert = true; return
         }
+        
+        // Desativa o loading social se estava ativo
+        isSocialLoading = false
+        
         Auth.auth().signIn(withEmail: trimmedEmail, password: trimmedPassword) { authResult, error in
             if let error = error {
                 self.alertMessage = "Falha no login: \(error.localizedDescription)"
@@ -1954,39 +2097,125 @@ struct LoginView: View {
         let theme = AppTheme(colorScheme: colorScheme)
         ZStack(alignment: .topLeading) {
             theme.fundo.ignoresSafeArea()
-            VStack {
-                Spacer()
-                
-                Image(isDarkMode ? "logo_escuro" : "logo_claro")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 100, height: 100)
-                    .foregroundColor(.corFolhaClara)
-                    .padding(.bottom, 30)
+            
+            // Adicionado ScrollView para telas menores
+            ScrollView {
+                VStack {
+                    Spacer(minLength: 50) // Garante espaço no topo
+                    
+                    Image(isDarkMode ? "logo_escuro" : "logo_claro")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 100, height: 100)
+                        .foregroundColor(.corFolhaClara)
+                        .padding(.bottom, 30)
 
-                VStack(spacing: 30) {
-                    Text("Bem-vindo(a)!").font(.largeTitle.weight(.bold)).foregroundColor(theme.corTerra)
                     VStack(spacing: 20) {
-                        TextField("E-mail", text: $email).padding().background(theme.fundoCampoInput).cornerRadius(12).autocapitalization(.none).keyboardType(.emailAddress)
-                        SecureField("Senha", text: $senha).padding().background(theme.fundoCampoInput).cornerRadius(12)
+                        Text("Bem-vindo(a)!").font(.largeTitle.weight(.bold)).foregroundColor(theme.corTerra)
+                        
+                        // --- Login com E-mail ---
+                        VStack(spacing: 20) {
+                            TextField("E-mail", text: $email).padding().background(theme.fundoCampoInput).cornerRadius(12).autocapitalization(.none).keyboardType(.emailAddress)
+                            SecureField("Senha", text: $senha).padding().background(theme.fundoCampoInput).cornerRadius(12)
 
-                        HStack {
-                            Spacer()
-                            Button("Esqueceu a senha?") {
-                                showForgotPassword = true
+                            HStack {
+                                Spacer()
+                                Button("Esqueceu a senha?") {
+                                    showForgotPassword = true
+                                }
+                                .font(.caption.weight(.bold))
+                                .foregroundColor(.corFolhaClara)
                             }
-                            .font(.caption.weight(.bold))
-                            .foregroundColor(.corFolhaClara)
-                        }
-                        .padding(.top, -10)
+                            .padding(.top, -10) // Ajuste de layout
 
-                        Button(action: attemptLogin) { Text("Entrar").font(.body.weight(.bold)).frame(maxWidth: .infinity).padding().background(Color.corFolhaClara).foregroundColor(.white).cornerRadius(12).shadow(color: .corFolhaClara.opacity(0.5), radius: 10, x: 0, y: 5) }.padding(.top, 10)
-                    }
-                    Divider().padding(.vertical, 20)
-                    Button { withAnimation { currentAuthScreen = .cadastro } } label: { VStack { Text("Não tem conta?").foregroundColor(.gray).font(.caption); Text("Crie uma agora!").font(.caption.weight(.bold)).foregroundColor(.corFolhaClara) } }
-                }.padding(.horizontal, 40)
-                Spacer()
-            }
+                            Button(action: attemptLogin) { Text("Entrar").font(.body.weight(.bold)).frame(maxWidth: .infinity).padding().background(Color.corFolhaClara).foregroundColor(.white).cornerRadius(12).shadow(color: .corFolhaClara.opacity(0.5), radius: 10, x: 0, y: 5) }
+                                .padding(.top, 10)
+                                .disabled(isSocialLoading) // Desativa se o login social estiver em progresso
+                        }
+                        
+                        // --- Divisor "OU" ---
+                        HStack(spacing: 15) {
+                            VStack { Divider().background(Color.gray.opacity(0.5)) }
+                            Text("OU")
+                                .font(.caption.weight(.bold))
+                                .foregroundColor(.secondary)
+                            VStack { Divider().background(Color.gray.opacity(0.5)) }
+                        }
+                        .padding(.vertical, 15) // Espaçamento do divisor
+                        
+                        // --- Botões Sociais ---
+                        VStack(spacing: 15) {
+                            // Botão Google
+                            Button(action: {
+                                isSocialLoading = true
+                                Task {
+                                    await appDataStore.signInWithGoogle()
+                                    // O listener do Auth cuidará da transição
+                                    isSocialLoading = false // Reseta em caso de falha
+                                }
+                            }) {
+                                HStack(spacing: 10) {
+                                    Image("google_icon") // <-- USA IMAGEM DO ASSETS
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 22, height: 22) // Tamanho do ícone
+                                    Text("Continuar com Google")
+                                }
+                                .font(.headline)
+                                .foregroundColor(.primary) // Texto escuro para botão claro
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(theme.fundoCard) // Fundo branco/cinza claro
+                                .cornerRadius(12)
+                                .overlay( // Borda sutil
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                                )
+                            }
+                            .disabled(isSocialLoading)
+
+                            // Botão GitHub
+                            Button(action: {
+                                isSocialLoading = true
+                                Task {
+                                    await appDataStore.signInWithGitHub()
+                                    // O listener do Auth cuidará da transição
+                                    isSocialLoading = false // Reseta em caso de falha
+                                }
+                            }) {
+                                HStack(spacing: 10) {
+                                    Image("github_icon") // <-- USA IMAGEM DO ASSETS
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 22, height: 22)
+                                        .colorInvert() // Inverte a cor da imagem (de preto para branco)
+                                    Text("Continuar com GitHub")
+                                }
+                                .font(.headline)
+                                .foregroundColor(.white) // Texto branco para botão escuro
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.black) // Fundo preto
+                                .cornerRadius(12)
+                            }
+                            .disabled(isSocialLoading)
+                            
+                            // Indicador de carregamento social
+                            if isSocialLoading {
+                                ProgressView()
+                                    .padding(.top, 10)
+                            }
+                        }
+                        
+                        // --- Link de Cadastro ---
+                        Divider().padding(.vertical, 20)
+                        Button { withAnimation { currentAuthScreen = .cadastro } } label: { VStack { Text("Não tem conta?").foregroundColor(.gray).font(.caption); Text("Crie uma agora!").font(.caption.weight(.bold)).foregroundColor(.corFolhaClara) } }
+                        
+                    }.padding(.horizontal, 40)
+                    
+                    Spacer(minLength: 50) // Garante espaço embaixo
+                }
+            } // Fim do ScrollView
         }
         .sheet(isPresented: $showForgotPassword, onDismiss: {
             senha = ""
@@ -2003,6 +2232,9 @@ struct LoginView: View {
         }
     }
 }
+// FIM DA LOGIN VIEW ATUALIZADA
+
+
 struct TermsAndConditionsView: View {
     @Binding var showTerms: Bool
     @Binding var showMandatoryModules: Bool
@@ -2319,6 +2551,11 @@ struct ContentView: View {
 
     private func logout() {
         do {
+            // NOVO: Adiciona logout do Google Sign In
+            GIDSignIn.sharedInstance.signOut()
+            print("Google GIDSignIn.sharedInstance.signOut() chamado.")
+            // FIM DA ADIÇÃO
+            
             try Auth.auth().signOut()
             print("Logout action initiated.")
             mandatoryModulesPresentedThisSession = false
